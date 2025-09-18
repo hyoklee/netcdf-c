@@ -76,7 +76,7 @@ jobs:
               -DBUILD_TESTING=OFF \
               -DHDF5_BUILD_EXAMPLES=OFF \
               -DHDF5_BUILD_TOOLS=ON \
-	      -DHDF5_ENABLE_ZLIB_SUPPORT=ON \
+              -DHDF5_ENABLE_ZLIB_SUPPORT=ON \
               ../hdf5
         make -j$(nproc)
         make install
