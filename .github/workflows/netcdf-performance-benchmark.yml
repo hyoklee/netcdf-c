@@ -98,7 +98,7 @@ jobs:
               -DENABLE_NETCDF_4=ON \
               -DENABLE_HDF5=ON \
               -DHDF5_ROOT=$GITHUB_WORKSPACE/hdf5-install \
-              -DENABLE_PARALLEL4=ON \
+              -DENABLE_PARALLEL4=OFF \
               -DENABLE_DAP=OFF \
               -DENABLE_BYTERANGE=OFF \
               -DBUILD_UTILITIES=ON \
