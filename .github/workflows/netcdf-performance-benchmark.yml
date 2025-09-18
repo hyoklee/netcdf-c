@@ -48,7 +48,7 @@ jobs:
     - name: Get HDF5 develop commit hash
       id: hdf5-hash
       run: |
-        HDF5_HASH=$(git ls-remote https://github.com/HDFGroup/hdf5.git develop | cut -f1)
+        HDF5_HASH=$(git ls-remote https://github.com/HDFGroup/hdf5.git refs/heads/develop | awk '{print $1}')
         echo "hash=$HDF5_HASH" >> $GITHUB_OUTPUT
         echo "HDF5 develop commit: $HDF5_HASH"
 
