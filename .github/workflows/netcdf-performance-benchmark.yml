@@ -71,7 +71,7 @@ jobs:
         cd ../hdf5-build
         cmake -DCMAKE_BUILD_TYPE=Release \
               -DCMAKE_INSTALL_PREFIX=$GITHUB_WORKSPACE/hdf5-install \
-              -DHDF5_ENABLE_PARALLEL=ON \
+              -DHDF5_ENABLE_PARALLEL=OFF \
               -DHDF5_ENABLE_THREADSAFE=OFF \
               -DBUILD_TESTING=OFF \
               -DHDF5_BUILD_EXAMPLES=OFF \
@@ -95,8 +95,10 @@ jobs:
         cd build
         cmake -DCMAKE_BUILD_TYPE=Release \
               -DCMAKE_INSTALL_PREFIX=$GITHUB_WORKSPACE/netcdf-install \
-              -DENABLE_NETCDF_4=ON \
               -DENABLE_HDF5=ON \
+              -DUSE_PARALLEL=OFF \
+              -DHDF5_PARALLEL=OFF \
+              -DUSE_PARALLEL4=OFF \
               -DHDF5_ROOT=$GITHUB_WORKSPACE/hdf5-install \
               -DENABLE_PARALLEL4=OFF \
               -DENABLE_DAP=OFF \
