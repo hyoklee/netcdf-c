@@ -107,7 +107,7 @@ jobs:
               -DENABLE_BYTERANGE=OFF \
               -DBUILD_UTILITIES=ON \
               -DBUILD_TESTING=ON \
-              -DENABLE_BENCHMARKS= ON \
+              -DENABLE_BENCHMARKS=ON \
               ..
         make -j$(nproc)
         make install
