@@ -1,0 +1,42 @@
+# GitHub Pages Configuration for NetCDF-4 Performance Benchmarks
+
+# This file provides configuration for the benchmark visualization
+# that will be published to GitHub Pages
+
+title: "NetCDF-4 Performance Benchmarks"
+description: "Automated performance testing results for NetCDF-C library with HDF5 develop branch"
+
+benchmark_config:
+  # Chart configuration for github-action-benchmark
+  chart_height: 400
+  chart_width: 800
+  show_tooltip: true
+  show_legend: true
+
+  # Data retention (days)
+  max_items_in_chart: 100
+
+  # Alert thresholds (percentage degradation)
+  alert_threshold: 120  # Alert if performance degrades by 20%
+  comment_on_alert: true
+
+categories:
+  - name: "Write Performance"
+    pattern: "*_write_*"
+    description: "NetCDF-4 write operation performance"
+
+  - name: "Read Performance"
+    pattern: "*_read_*"
+    description: "NetCDF-4 read operation performance"
+
+  - name: "Contiguous Storage"
+    pattern: "contiguous_*"
+    description: "Performance with contiguous storage layout"
+
+  - name: "Chunked Storage"
+    pattern: "chunked_*"
+    description: "Performance with chunked storage layout"
+
+  - name: "Compressed Storage"
+    pattern: "compressed_*"
+    description: "Performance with compressed storage layout"
