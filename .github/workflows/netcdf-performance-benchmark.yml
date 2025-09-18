@@ -100,6 +100,8 @@ jobs:
               -DHDF5_ROOT=$GITHUB_WORKSPACE/hdf5-install \
               -DENABLE_PARALLEL4=OFF \
               -DENABLE_DAP=OFF \
+              -DENABLE_LIBXML2=OFF \
+              -DENABLE_NCZARR=OFF \
               -DENABLE_BYTERANGE=OFF \
               -DBUILD_UTILITIES=ON \
               -DBUILD_TESTING=ON \
