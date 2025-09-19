@@ -134,9 +134,16 @@ def parse_benchmark_file(file_path: str) -> List[Dict[str, Any]]:
                         parsed['compression_level'] = compression_level
                         parsed['source_file'] = os.path.basename(file_path)
 
-                        # Modify name to include compression info
-                        if compression_level > 0:
+                        # Modify name to include compression info for ALL benchmarks
+                        # to ensure unique names across different deflate levels
+                        if parsed['storage_type'] == 'compressed' and compression_level > 0:
+                            # Only add deflate level to compressed benchmarks
                             parsed['name'] += f"_deflate{compression_level}"
+                        elif parsed['storage_type'] in ['contiguous', 'chunked']:
+                            # For non-compressed benchmarks, add deflate level context if > 0
+                            if compression_level > 0:
+                                parsed['name'] += f"_ctx_deflate{compression_level}"
+
                         if 'shuffle' in file_path.lower():
                             parsed['name'] += "_shuffle"
 
@@ -186,8 +193,12 @@ def parse_all_benchmarks(results_dir: str, hdf5_hash: str = None) -> List[Dict[s
 def create_benchmark_json(benchmarks: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     """Convert parsed benchmarks to github-action-benchmark JSON format."""
     json_benchmarks = []
+    seen_names = set()
 
-    for bench in benchmarks:
+    # Sort benchmarks by name to ensure consistent ordering
+    sorted_benchmarks = sorted(benchmarks, key=lambda x: x["name"])
+
+    for bench in sorted_benchmarks:
         # Create base benchmark entry
         benchmark_entry = {
             "name": bench["name"],
@@ -199,7 +210,12 @@ def create_benchmark_json(benchmarks: List[Dict[str, Any]]) -> List[Dict[str, An
         if "hdf5_commit_hash" in bench:
             benchmark_entry["extra"] = f"HDF5: {bench['hdf5_commit_short']}"
 
-        json_benchmarks.append(benchmark_entry)
+        # Only add if we haven't seen this benchmark name before
+        if bench["name"] not in seen_names:
+            seen_names.add(bench["name"])
+            json_benchmarks.append(benchmark_entry)
+        else:
+            print(f"Warning: Skipping duplicate benchmark '{bench['name']}'")
 
     return json_benchmarks
 
@@ -225,6 +241,18 @@ def main():
         sys.exit(1)
 
     print(f"Found {len(all_benchmarks)} benchmark results")
+
+    # Debug: print benchmark names to understand duplicates
+    benchmark_names = [b["name"] for b in all_benchmarks]
+    name_counts = {}
+    for name in benchmark_names:
+        name_counts[name] = name_counts.get(name, 0) + 1
+
+    duplicates = {name: count for name, count in name_counts.items() if count > 1}
+    if duplicates:
+        print(f"Found {len(duplicates)} types of duplicate benchmarks:")
+        for name, count in sorted(duplicates.items()):
+            print(f"  '{name}': {count} occurrences")
 
     # Convert to JSON format
     json_benchmarks = create_benchmark_json(all_benchmarks)
