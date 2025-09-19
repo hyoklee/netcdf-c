@@ -17,8 +17,6 @@ jobs:
     steps:
     - name: Checkout NetCDF-C
       uses: actions/checkout@v4
-      with:
-        path: netcdf-c
 
     - name: Install system dependencies
       run: |
@@ -90,7 +88,6 @@ jobs:
 
     - name: Build NetCDF-C with HDF5 develop
       run: |
-        cd netcdf-c
         mkdir build
         cd build
         cmake -DCMAKE_BUILD_TYPE=Release \
@@ -120,13 +117,13 @@ jobs:
 
     - name: Build benchmark test
       run: |
-        cd netcdf-c/build
+        cd build
         # Build the specific benchmark test
         make -j$(nproc) -C nc_perf tst_chunks3
 
     - name: Run NetCDF-4 Performance Benchmarks
       run: |
-        cd netcdf-c/build/nc_perf
+        cd build/nc_perf
 
         # Create results directory
         mkdir -p $GITHUB_WORKSPACE/benchmark-results
@@ -165,7 +162,7 @@ jobs:
     - name: Process benchmark results to JSON
       run: |
         cd $GITHUB_WORKSPACE
-        python3 netcdf-c/.github/scripts/parse_benchmark_results.py \
+        python3 .github/scripts/parse_benchmark_results.py \
           benchmark-results \
           benchmark-results/benchmark_data.json
 
@@ -180,6 +177,13 @@ jobs:
         # Push and deploy GitHub pages branch automatically
         gh-pages-branch: gh-pages
         benchmark-data-dir-path: benchmarks
+        skip-fetch-gh-pages: false
+        comment-always: false
+        summary-always: false
+        save-data-file: true
+        comment-on-alert: false
+        alert-threshold: 200%
+        fail-on-alert: false
 
     - name: Upload detailed results
       uses: actions/upload-artifact@v4
