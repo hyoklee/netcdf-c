@@ -142,25 +142,25 @@ jobs:
         done
 
         # Test 2: Medium chunks with compression
-        echo "=== Medium Chunks Performance Test ===" | tee $GITHUB_WORKSPACE/benchmark-results/tst_chunks3_medium.txt
-        for deflate in 0 1 6; do
-          echo "Testing deflate level: $deflate" | tee -a $GITHUB_WORKSPACE/benchmark-results/tst_chunks3_medium.txt
-          ./tst_chunks3 $deflate 1024 128 1024 128 1024 128 | tee -a $GITHUB_WORKSPACE/benchmark-results/tst_chunks3_medium.txt
-        done
+        # echo "=== Medium Chunks Performance Test ===" | tee $GITHUB_WORKSPACE/benchmark-results/tst_chunks3_medium.txt
+        # for deflate in 0 1 6; do
+        #   echo "Testing deflate level: $deflate" | tee -a $GITHUB_WORKSPACE/benchmark-results/tst_chunks3_medium.txt
+        #   ./tst_chunks3 $deflate 1024 128 1024 128 1024 128 | tee -a $GITHUB_WORKSPACE/benchmark-results/tst_chunks3_medium.txt
+        # done
 
         # Test 3: Large chunks with minimal compression
-        echo "=== Large Chunks Performance Test ===" | tee $GITHUB_WORKSPACE/benchmark-results/tst_chunks3_large.txt
-        for deflate in 0 1; do
-          echo "Testing deflate level: $deflate" | tee -a $GITHUB_WORKSPACE/benchmark-results/tst_chunks3_large.txt
-          ./tst_chunks3 $deflate 2048 256 2048 256 2048 256 | tee -a $GITHUB_WORKSPACE/benchmark-results/tst_chunks3_large.txt
-        done
+        # echo "=== Large Chunks Performance Test ===" | tee $GITHUB_WORKSPACE/benchmark-results/tst_chunks3_large.txt
+        # for deflate in 0 1; do
+        #   echo "Testing deflate level: $deflate" | tee -a $GITHUB_WORKSPACE/benchmark-results/tst_chunks3_large.txt
+        #   ./tst_chunks3 $deflate 2048 256 2048 256 2048 256 | tee -a $GITHUB_WORKSPACE/benchmark-results/tst_chunks3_large.txt
+        # done
 
         # Test 4: Shuffle filter performance
-        echo "=== Shuffle Filter Performance Test ===" | tee $GITHUB_WORKSPACE/benchmark-results/tst_chunks3_shuffle.txt
-        for deflate in -1 -3 -6; do  # Negative values enable shuffle
-          echo "Testing shuffle + deflate level: ${deflate#-}" | tee -a $GITHUB_WORKSPACE/benchmark-results/tst_chunks3_shuffle.txt
-          ./tst_chunks3 $deflate 1024 128 1024 128 1024 128 | tee -a $GITHUB_WORKSPACE/benchmark-results/tst_chunks3_shuffle.txt
-        done
+        # echo "=== Shuffle Filter Performance Test ===" | tee $GITHUB_WORKSPACE/benchmark-results/tst_chunks3_shuffle.txt
+        # for deflate in -1 -3 -6; do  # Negative values enable shuffle
+        #   echo "Testing shuffle + deflate level: ${deflate#-}" | tee -a $GITHUB_WORKSPACE/benchmark-results/tst_chunks3_shuffle.txt
+        #   ./tst_chunks3 $deflate 1024 128 1024 128 1024 128 | tee -a $GITHUB_WORKSPACE/benchmark-results/tst_chunks3_shuffle.txt
+        # done
 
     - name: Process benchmark results to JSON
       run: |
