@@ -21,6 +21,7 @@ import sys
 import os
 from pathlib import Path
 from typing import List, Dict, Any
+import datetime
 
 
 def parse_timing_line(line: str) -> Dict[str, Any]:
@@ -169,11 +170,13 @@ def parse_all_benchmarks(results_dir: str, hdf5_hash: str = None) -> List[Dict[s
         print(f"Parsing {txt_file}")
         benchmarks = parse_benchmark_file(str(txt_file))
 
-        # Add HDF5 hash to each benchmark if provided
+        # Add HDF5 hash and timestamp to each benchmark if provided
         if hdf5_hash:
+            current_timestamp = datetime.datetime.now().isoformat()
             for benchmark in benchmarks:
                 benchmark['hdf5_commit_hash'] = hdf5_hash
                 benchmark['hdf5_commit_short'] = hdf5_hash[:8] if hdf5_hash else None
+                benchmark['timestamp'] = current_timestamp
 
         all_benchmarks.extend(benchmarks)
 

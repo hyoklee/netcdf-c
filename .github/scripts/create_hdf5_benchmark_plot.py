@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
-Create custom benchmark plot with HDF5 commit hash on x-axis
+Create custom benchmark plot with dates on x-axis
 
 This script reads the detailed benchmark results and creates a custom plot
-where the x-axis shows HDF5 commit hashes instead of timestamps.
+where the x-axis shows dates instead of HDF5 commit hashes.
 """
 
 import json
@@ -14,6 +14,8 @@ import os
 from pathlib import Path
 from typing import List, Dict, Any
 import argparse
+import datetime
+import matplotlib.dates as mdates
 
 
 def load_benchmark_history(gh_pages_dir: str) -> List[Dict[str, Any]]:
@@ -51,22 +53,33 @@ def load_current_benchmarks(detailed_results_file: str) -> List[Dict[str, Any]]:
 
 
 def create_hdf5_hash_plot(benchmarks: List[Dict[str, Any]], output_file: str):
-    """Create a plot with HDF5 commit hash on x-axis."""
+    """Create a plot with dates on x-axis."""
     if not benchmarks:
         print("No benchmark data to plot")
         return
 
-    # Filter benchmarks that have HDF5 commit hash
-    hdf5_benchmarks = [b for b in benchmarks if 'hdf5_commit_hash' in b]
+    # Filter benchmarks that have timestamp or try to use historical data
+    timestamped_benchmarks = [b for b in benchmarks if 'timestamp' in b]
 
-    if not hdf5_benchmarks:
-        print("No benchmarks with HDF5 commit hash found")
-        return
+    if not timestamped_benchmarks:
+        print("No benchmarks with timestamp found, falling back to available data")
+        # Try to use any available benchmarks and assign dates based on their position
+        if benchmarks:
+            timestamped_benchmarks = benchmarks
+            # Assign artificial timestamps for backward compatibility
+            base_date = datetime.datetime.now() - datetime.timedelta(days=len(benchmarks))
+            for i, benchmark in enumerate(timestamped_benchmarks):
+                benchmark['timestamp'] = (base_date + datetime.timedelta(days=i)).isoformat()
+        else:
+            return
 
     # Convert to DataFrame for easier manipulation
-    df = pd.DataFrame(hdf5_benchmarks)
+    df = pd.DataFrame(timestamped_benchmarks)
 
-    # Group by benchmark name and HDF5 commit
+    # Convert timestamp strings to datetime objects
+    df['datetime'] = pd.to_datetime(df['timestamp'])
+
+    # Group by benchmark name
     benchmark_names = df['name'].unique()
 
     # Create subplot for each benchmark type
@@ -75,49 +88,61 @@ def create_hdf5_hash_plot(benchmarks: List[Dict[str, Any]], output_file: str):
         axes = [axes]
 
     for i, benchmark_name in enumerate(benchmark_names):
-        benchmark_data = df[df['name'] == benchmark_name].sort_values('hdf5_commit_hash')
+        benchmark_data = df[df['name'] == benchmark_name].sort_values('datetime')
 
         if len(benchmark_data) == 0:
             continue
 
         ax = axes[i]
 
-        # Plot the data
-        x_labels = [h[:8] for h in benchmark_data['hdf5_commit_hash']]  # Use short hash
+        # Plot the data with dates on x-axis
+        x_dates = benchmark_data['datetime']
         y_values = benchmark_data['value']
 
-        ax.plot(range(len(x_labels)), y_values, 'o-', linewidth=2, markersize=6)
-        ax.set_xticks(range(len(x_labels)))
-        ax.set_xticklabels(x_labels, rotation=45, ha='right')
+        ax.plot(x_dates, y_values, 'o-', linewidth=2, markersize=6)
         ax.set_ylabel(f"Time ({benchmark_data['unit'].iloc[0]})")
-        ax.set_xlabel("HDF5 Commit Hash")
+        ax.set_xlabel("Date")
         ax.set_title(f"NetCDF-4 Performance: {benchmark_name}")
         ax.grid(True, alpha=0.3)
 
+        # Format x-axis to show dates nicely
+        ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
+        ax.xaxis.set_major_locator(mdates.DayLocator(interval=1))
+        plt.setp(ax.xaxis.get_majorticklabels(), rotation=45, ha='right')
+
         # Add value labels on points
-        for j, (x, y) in enumerate(zip(range(len(x_labels)), y_values)):
+        for x, y in zip(x_dates, y_values):
             ax.annotate(f'{y:.4f}', (x, y), textcoords="offset points",
                        xytext=(0,10), ha='center', fontsize=8)
 
+        # Add HDF5 commit hash as secondary information in legend or subtitle
+        if 'hdf5_commit_hash' in benchmark_data.columns:
+            unique_hashes = benchmark_data['hdf5_commit_hash'].unique()
+            if len(unique_hashes) <= 3:  # Only show if few commits
+                hash_str = ', '.join([h[:8] for h in unique_hashes])
+                ax.text(0.02, 0.98, f"HDF5 commits: {hash_str}",
+                       transform=ax.transAxes, fontsize=8, verticalalignment='top',
+                       bbox=dict(boxstyle="round,pad=0.3", facecolor="lightgray", alpha=0.7))
+
     plt.tight_layout()
     plt.savefig(output_file, dpi=300, bbox_inches='tight')
-    print(f"HDF5 benchmark plot saved to {output_file}")
+    print(f"Date-based benchmark plot saved to {output_file}")
 
 
 def create_comparison_plot(benchmarks: List[Dict[str, Any]], output_file: str):
-    """Create a comparison plot showing all benchmark types for latest HDF5 commit."""
+    """Create a comparison plot showing all benchmark types for latest benchmark run."""
     if not benchmarks:
         return
 
-    # Filter benchmarks that have HDF5 commit hash
-    hdf5_benchmarks = [b for b in benchmarks if 'hdf5_commit_hash' in b]
+    # Filter benchmarks that have timestamp
+    timestamped_benchmarks = [b for b in benchmarks if 'timestamp' in b]
 
-    if not hdf5_benchmarks:
+    if not timestamped_benchmarks:
         return
 
-    # Get the latest HDF5 commit
-    latest_commit = max(hdf5_benchmarks, key=lambda x: x.get('timestamp', 0))['hdf5_commit_hash']
-    latest_benchmarks = [b for b in hdf5_benchmarks if b['hdf5_commit_hash'] == latest_commit]
+    # Get the latest benchmark run by timestamp
+    latest_timestamp = max(timestamped_benchmarks, key=lambda x: x.get('timestamp', ''))['timestamp']
+    latest_benchmarks = [b for b in timestamped_benchmarks if b['timestamp'] == latest_timestamp]
 
     # Group by storage type and operation
     df = pd.DataFrame(latest_benchmarks)
@@ -146,7 +171,12 @@ def create_comparison_plot(benchmarks: List[Dict[str, Any]], output_file: str):
 
     ax.set_xlabel('Storage Type')
     ax.set_ylabel('Time (seconds)')
-    ax.set_title(f'NetCDF-4 Performance Comparison (HDF5: {latest_commit[:8]})')
+
+    # Format the date for the title
+    date_obj = datetime.datetime.fromisoformat(latest_timestamp.replace('Z', '+00:00') if latest_timestamp.endswith('Z') else latest_timestamp)
+    date_str = date_obj.strftime('%Y-%m-%d')
+    ax.set_title(f'NetCDF-4 Performance Comparison ({date_str})')
+
     ax.set_xticks([pos + width/2 for pos in x])
     ax.set_xticklabels(storage_types)
     ax.legend()
@@ -181,8 +211,8 @@ def main():
     output_path.mkdir(parents=True, exist_ok=True)
 
     # Create plots
-    create_hdf5_hash_plot(all_benchmarks, output_path / "hdf5_performance_timeline.png")
-    create_comparison_plot(current_benchmarks, output_path / "hdf5_performance_comparison.png")
+    create_hdf5_hash_plot(all_benchmarks, output_path / "performance_timeline.png")
+    create_comparison_plot(current_benchmarks, output_path / "performance_comparison.png")
 
     print(f"Custom benchmark plots created in {output_path}")
 
