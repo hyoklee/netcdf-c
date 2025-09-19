@@ -149,7 +149,7 @@ def parse_benchmark_file(file_path: str) -> List[Dict[str, Any]]:
     return benchmarks
 
 
-def parse_all_benchmarks(results_dir: str) -> List[Dict[str, Any]]:
+def parse_all_benchmarks(results_dir: str, hdf5_hash: str = None) -> List[Dict[str, Any]]:
     """Parse all benchmark result files in the directory."""
     all_benchmarks = []
 
@@ -168,6 +168,13 @@ def parse_all_benchmarks(results_dir: str) -> List[Dict[str, Any]]:
     for txt_file in txt_files:
         print(f"Parsing {txt_file}")
         benchmarks = parse_benchmark_file(str(txt_file))
+
+        # Add HDF5 hash to each benchmark if provided
+        if hdf5_hash:
+            for benchmark in benchmarks:
+                benchmark['hdf5_commit_hash'] = hdf5_hash
+                benchmark['hdf5_commit_short'] = hdf5_hash[:8] if hdf5_hash else None
+
         all_benchmarks.extend(benchmarks)
 
     return all_benchmarks
@@ -178,27 +185,37 @@ def create_benchmark_json(benchmarks: List[Dict[str, Any]]) -> List[Dict[str, An
     json_benchmarks = []
 
     for bench in benchmarks:
-        json_benchmarks.append({
+        # Create base benchmark entry
+        benchmark_entry = {
             "name": bench["name"],
             "unit": bench["unit"],
             "value": bench["value"]
-        })
+        }
+
+        # Add HDF5 commit hash information if available
+        if "hdf5_commit_hash" in bench:
+            benchmark_entry["extra"] = f"HDF5: {bench['hdf5_commit_short']}"
+
+        json_benchmarks.append(benchmark_entry)
 
     return json_benchmarks
 
 
 def main():
-    if len(sys.argv) != 3:
-        print("Usage: parse_benchmark_results.py <results_directory> <output_json_file>")
+    if len(sys.argv) < 3 or len(sys.argv) > 4:
+        print("Usage: parse_benchmark_results.py <results_directory> <output_json_file> [hdf5_commit_hash]")
         sys.exit(1)
 
     results_dir = sys.argv[1]
     output_file = sys.argv[2]
+    hdf5_hash = sys.argv[3] if len(sys.argv) == 4 else None
 
     print(f"Parsing benchmark results from {results_dir}")
+    if hdf5_hash:
+        print(f"Using HDF5 commit hash: {hdf5_hash}")
 
     # Parse all benchmark files
-    all_benchmarks = parse_all_benchmarks(results_dir)
+    all_benchmarks = parse_all_benchmarks(results_dir, hdf5_hash)
 
     if not all_benchmarks:
         print("Error: No benchmarks found")

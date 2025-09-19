@@ -164,7 +164,8 @@ jobs:
         cd $GITHUB_WORKSPACE
         python3 .github/scripts/parse_benchmark_results.py \
           benchmark-results \
-          benchmark-results/benchmark_data.json
+          benchmark-results/benchmark_data.json \
+          ${{ steps.hdf5-hash.outputs.hash }}
 
     - name: Store benchmark result
       uses: benchmark-action/github-action-benchmark@v1
@@ -184,6 +185,39 @@ jobs:
         comment-on-alert: false
         alert-threshold: 200%
         fail-on-alert: false
+
+    - name: Checkout gh-pages branch for custom plots
+      uses: actions/checkout@v4
+      with:
+        ref: gh-pages
+        path: gh-pages
+        token: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Create custom HDF5 benchmark plots
+      run: |
+        cd $GITHUB_WORKSPACE
+        python3 .github/scripts/create_hdf5_benchmark_plot.py \
+          benchmark-results/detailed_results.json \
+          gh-pages/custom-plots \
+          --gh-pages-dir gh-pages
+
+    - name: Create benchmark index page
+      run: |
+        cd $GITHUB_WORKSPACE
+        python3 .github/scripts/create_index_html.py gh-pages
+
+    - name: Commit and push custom plots
+      run: |
+        cd gh-pages
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add custom-plots/ benchmark-index.html
+        if git diff --staged --quiet; then
+          echo "No changes to custom plots"
+        else
+          git commit -m "Update HDF5 benchmark plots for commit ${{ steps.hdf5-hash.outputs.hash }}"
+          git push
+        fi
 
     - name: Upload detailed results
       uses: actions/upload-artifact@v4
