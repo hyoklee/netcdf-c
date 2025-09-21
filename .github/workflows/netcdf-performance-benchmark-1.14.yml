@@ -1,0 +1,86 @@
+name: NetCDF-4 Performance Benchmark 1.14
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  benchmark:
+    runs-on: ubuntu-24.04
+
+    steps:
+    - name: Checkout NetCDF-C
+      uses: actions/checkout@v4
+
+    - name: Install system dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          build-essential \
+          cmake \
+          gfortran \
+          libcurl4-openssl-dev \
+          libzip-dev \
+          zlib1g-dev \
+          libbz2-dev \
+          libaec-dev \
+          openmpi-bin \
+          openmpi-common \
+          libopenmpi-dev \
+	  libhdf5-dev \
+          python3 \
+          python3-pip \
+          python3-numpy \
+          git \
+          pkg-config
+
+
+    - name: Build NetCDF-C with HDF5
+      run: |
+        mkdir build
+        cd build
+        cmake -DCMAKE_BUILD_TYPE=Release \
+              -DCMAKE_INSTALL_PREFIX=$GITHUB_WORKSPACE/netcdf-install \
+              -DENABLE_HDF5=ON \
+              -DUSE_PARALLEL=OFF \
+              -DHDF5_PARALLEL=OFF \
+              -DUSE_PARALLEL4=OFF \
+              -DENABLE_PARALLEL4=OFF \
+              -DENABLE_DAP=OFF \
+              -DENABLE_LIBXML2=OFF \
+              -DENABLE_NCZARR=OFF \
+              -DENABLE_BYTERANGE=OFF \
+              -DBUILD_UTILITIES=ON \
+              -DBUILD_TESTING=ON \
+              -DENABLE_BENCHMARKS=ON \
+              ..
+        make -j$(nproc)
+        make install
+
+    - name: Set up NetCDF environment
+      run: |
+        echo "$GITHUB_WORKSPACE/netcdf-install/bin" >> $GITHUB_PATH
+        echo "NETCDF_ROOT=$GITHUB_WORKSPACE/netcdf-install" >> $GITHUB_ENV
+        echo "LD_LIBRARY_PATH=$GITHUB_WORKSPACE/netcdf-install/lib:$LD_LIBRARY_PATH" >> $GITHUB_ENV
+
+    - name: Build benchmark test
+      run: |
+        cd build
+        # Build the specific benchmark test
+        make -j$(nproc) -C nc_perf tst_chunks3
+
+    - name: Run NetCDF-4 Performance Benchmarks
+      run: |
+        cd build/nc_perf
+
+        # Create results directory
+        mkdir -p $GITHUB_WORKSPACE/benchmark-results
+
+        # Define test configurations for different scenarios
+        echo "Running NetCDF-4 Chunking Performance Benchmarks..."
+
+        # Single comprehensive test run - tst_chunks3 runs all scenarios internally
+        echo "=== NetCDF-4 Chunking Performance Benchmarks ===" | tee $GITHUB_WORKSPACE/benchmark-results/tst_chunks3_results.txt
+        echo "Testing with deflate level: 6" | tee -a $GITHUB_WORKSPACE/benchmark-results/tst_chunks3_results.txt
+        ./tst_chunks3 6 512 64 512 64 512 64 | tee -a $GITHUB_WORKSPACE/benchmark-results/tst_chunks3_results.txt
