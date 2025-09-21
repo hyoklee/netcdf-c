@@ -1,4 +1,4 @@
-name: NetCDF-4 Performance Benchmark 1.14
+name: NetCDF-4 Performance Benchmark 1.10
 
 on:
   push:
