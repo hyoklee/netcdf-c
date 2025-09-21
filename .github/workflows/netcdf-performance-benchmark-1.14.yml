@@ -2,7 +2,7 @@ name: NetCDF-4 Performance Benchmark 1.14
 
 on:
   push:
-    branches: [ main- ]
+    branches: [ main ]
   workflow_dispatch:
 
 jobs:
@@ -12,6 +12,16 @@ jobs:
     steps:
     - name: Checkout NetCDF-C
       uses: actions/checkout@v4
+
+   - name: Free Disk Space (Ubuntu)
+     uses: jlumbroso/free-disk-space@main
+     with:
+       android: true
+       dotnet: true  
+       haskell: true
+       large-packages: true
+       tool-cache: false
+       swap-storage: true
 
     - name: Install system dependencies
       run: |
@@ -120,11 +130,11 @@ jobs:
         done
 
         # Test 3: Large chunks with minimal compression
-        echo "=== Large Chunks Performance Test ===" | tee $GITHUB_WORKSPACE/benchmark-results/tst_chunks3_large.txt
-        for deflate in 0 1; do
-          echo "Testing deflate level: $deflate" | tee -a $GITHUB_WORKSPACE/benchmark-results/tst_chunks3_large.txt
-          ./tst_chunks3 $deflate 2048 256 2048 256 2048 256 | tee -a $GITHUB_WORKSPACE/benchmark-results/tst_chunks3_large.txt
-        done
+        # echo "=== Large Chunks Performance Test ===" | tee $GITHUB_WORKSPACE/benchmark-results/tst_chunks3_large.txt
+        # for deflate in 0 1; do
+        #  echo "Testing deflate level: $deflate" | tee -a $GITHUB_WORKSPACE/benchmark-results/tst_chunks3_large.txt
+        #  ./tst_chunks3 $deflate 2048 256 2048 256 2048 256 | tee -a $GITHUB_WORKSPACE/benchmark-results/tst_chunks3_large.txt
+        # done
 
         # Test 4: Shuffle filter performance
         echo "=== Shuffle Filter Performance Test ===" | tee $GITHUB_WORKSPACE/benchmark-results/tst_chunks3_shuffle.txt
