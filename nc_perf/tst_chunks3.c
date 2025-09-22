@@ -27,6 +27,10 @@
 #ifdef HAVE_SYS_RESOURCE_H
 #include <sys/resource.h>
 #endif
+#if defined(__linux__) || defined(__unix__) || defined(__APPLE__)
+#include <sys/statvfs.h>
+#define HAVE_STATVFS 1
+#endif
 #include "nc_tests.h"		/* The ERR macro is here... */
 #include "netcdf.h"
 
@@ -163,6 +167,65 @@ emalloc(size_t bytes) {
     return memory;
 }
 
+/* Check available disk space in bytes for given path */
+long long
+get_available_disk_space(const char *path) {
+#ifdef HAVE_STATVFS
+    struct statvfs stat;
+    if (statvfs(path, &stat) == 0) {
+        return (long long)stat.f_bavail * stat.f_frsize;
+    }
+#endif
+    return -1; /* Unable to determine disk space */
+}
+
+/* Calculate estimated disk space needed for test */
+long long
+calculate_required_space(size_t *dims) {
+    /* Each variable (contiguous, chunked, compressed) needs dims[0]*dims[1]*dims[2]*sizeof(float) bytes
+     * Compressed variable will be smaller, but we estimate conservatively
+     * Add 20% overhead for metadata, chunking overhead, etc. */
+    long long var_size = (long long)dims[0] * dims[1] * dims[2] * sizeof(float);
+    long long total_size = var_size * 3; /* 3 variables */
+    return total_size + (total_size / 5); /* Add 20% overhead */
+}
+
+/* Check if there's enough disk space, exit if not */
+void
+check_disk_space(const char *path, size_t *dims) {
+    long long available = get_available_disk_space(path);
+    long long required = calculate_required_space(dims);
+
+    if (available == -1) {
+        printf("Warning: Unable to determine available disk space\n");
+        return;
+    }
+
+    printf("Disk space check: %.2f GB available, %.2f GB required\n",
+           available / 1e9, required / 1e9);
+
+    if (available < required) {
+        printf("ERROR: Insufficient disk space!\n");
+        printf("       Available: %.2f GB\n", available / 1e9);
+        printf("       Required:  %.2f GB\n", required / 1e9);
+        printf("       Shortfall: %.2f GB\n", (required - available) / 1e9);
+        printf("Terminating to prevent hanging.\n");
+        exit(3);
+    }
+}
+
+/* Quick disk space check during operations */
+void
+check_disk_space_quick(const char *path) {
+    long long available = get_available_disk_space(path);
+    if (available != -1 && available < 100000000) { /* Less than 100MB */
+        printf("ERROR: Running out of disk space during operation!\n");
+        printf("       Available: %.2f GB\n", available / 1e9);
+        printf("Terminating to prevent hanging.\n");
+        exit(3);
+    }
+}
+
 
 /* compare contiguous, chunked, and compressed performance */
 int
@@ -206,6 +269,9 @@ main(int argc, char *argv[]) {
        filter. */
     parse_args(argc, argv, &deflate_level, &shuffle, dims,
 	       chunks, &cache_size, &cache_hash, &cache_pre);
+
+    /* Check if we have enough disk space before starting */
+    check_disk_space(".", dims);
 
     /* get cache defaults, then set cache parameters that are not default */
     if((stat = nc_get_chunk_cache(&cache_size_def, &cache_hash_def,
@@ -319,6 +385,9 @@ main(int argc, char *argv[]) {
     printf("\n");
     contig_time = TMsec;
 
+    /* Check disk space after contiguous write */
+    check_disk_space_quick(".");
+
     snprintf(time_mess, sizeof(time_mess),"  chunked    write %3d %3ld %3ld  %3ld %3ld %3ld",
 	    1, dims[1], dims[2], chunks[0], chunks[1], chunks[2]);
     TIMING_START ;
@@ -334,6 +403,9 @@ main(int argc, char *argv[]) {
 	printf(" %5.2g x faster\n", ratio);
     else
 	printf(" %5.2g x slower\n", 1.0/ratio);
+
+    /* Check disk space after chunked write */
+    check_disk_space_quick(".");
 
     snprintf(time_mess, sizeof(time_mess),"  compressed write %3d %3ld %3ld  %3ld %3ld %3ld",
 	    1, dims[1], dims[2], chunks[0], chunks[1], chunks[2]);
@@ -351,6 +423,9 @@ main(int argc, char *argv[]) {
     else
 	printf(" %5.2g x slower\n", 1.0/ratio);
     printf("\n");
+
+    /* Check disk space after compressed write */
+    check_disk_space_quick(".");
 
     /* write each variable one xz slab at a time */
     start[0] = 0;
