@@ -157,7 +157,7 @@ def parse_benchmark_file(file_path: str) -> List[Dict[str, Any]]:
     return benchmarks
 
 
-def parse_all_benchmarks(results_dir: str, hdf5_hash: str = None) -> List[Dict[str, Any]]:
+def parse_all_benchmarks(results_dir: str, hdf5_hash: str = None, version_filter: str = None) -> List[Dict[str, Any]]:
     """Parse all benchmark result files in the directory."""
     all_benchmarks = []
 
@@ -169,8 +169,16 @@ def parse_all_benchmarks(results_dir: str, hdf5_hash: str = None) -> List[Dict[s
     # Find all .txt files containing benchmark results
     txt_files = list(results_path.glob("*.txt"))
 
+    # Filter files by version if specified
+    if version_filter:
+        if version_filter == "develop":
+            txt_files = [f for f in txt_files if "develop" in f.name]
+        elif version_filter == "1146" or version_filter == "hdf5-1.14.6":
+            txt_files = [f for f in txt_files if "1146" in f.name]
+        print(f"Filtered to {len(txt_files)} files for version {version_filter}")
+
     if not txt_files:
-        print(f"Warning: No .txt files found in {results_dir}")
+        print(f"Warning: No .txt files found in {results_dir} for version {version_filter or 'any'}")
         return []
 
     for txt_file in txt_files:
@@ -221,20 +229,23 @@ def create_benchmark_json(benchmarks: List[Dict[str, Any]]) -> List[Dict[str, An
 
 
 def main():
-    if len(sys.argv) < 3 or len(sys.argv) > 4:
-        print("Usage: parse_benchmark_results.py <results_directory> <output_json_file> [hdf5_commit_hash]")
+    if len(sys.argv) < 3 or len(sys.argv) > 5:
+        print("Usage: parse_benchmark_results.py <results_directory> <output_json_file> [hdf5_commit_hash] [version_filter]")
         sys.exit(1)
 
     results_dir = sys.argv[1]
     output_file = sys.argv[2]
-    hdf5_hash = sys.argv[3] if len(sys.argv) == 4 else None
+    hdf5_hash = sys.argv[3] if len(sys.argv) >= 4 else None
+    version_filter = sys.argv[4] if len(sys.argv) == 5 else None
 
     print(f"Parsing benchmark results from {results_dir}")
     if hdf5_hash:
         print(f"Using HDF5 commit hash: {hdf5_hash}")
+    if version_filter:
+        print(f"Filtering for version: {version_filter}")
 
     # Parse all benchmark files
-    all_benchmarks = parse_all_benchmarks(results_dir, hdf5_hash)
+    all_benchmarks = parse_all_benchmarks(results_dir, hdf5_hash, version_filter)
 
     if not all_benchmarks:
         print("Error: No benchmarks found")

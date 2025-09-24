@@ -50,25 +50,34 @@ jobs:
         echo "hash=$HDF5_HASH" >> $GITHUB_OUTPUT
         echo "HDF5 develop commit: $HDF5_HASH"
 
-    - name: Cache HDF5 build
-      id: cache-hdf5
+    - name: Cache HDF5 develop build
+      id: cache-hdf5-develop
       uses: actions/cache@v4
       with:
         path: |
-          hdf5-install
-          hdf5-build
+          hdf5-develop-install
+          hdf5-develop-build
         key: hdf5-develop-${{ steps.hdf5-hash.outputs.hash }}-ubuntu-24.04
 
+    - name: Cache HDF5 1.14.6 build
+      id: cache-hdf5-1146
+      uses: actions/cache@v4
+      with:
+        path: |
+          hdf5-1146-install
+          hdf5-1146-build
+        key: hdf5-1146-ubuntu-24.04
+
     - name: Checkout and build HDF5 develop
-      if: steps.cache-hdf5.outputs.cache-hit != 'true'
+      if: steps.cache-hdf5-develop.outputs.cache-hit != 'true'
       run: |
         git clone https://github.com/HDFGroup/hdf5.git
         cd hdf5
         git checkout develop
-        mkdir -p ../hdf5-build
-        cd ../hdf5-build
+        mkdir -p ../hdf5-develop-build
+        cd ../hdf5-develop-build
         cmake -DCMAKE_BUILD_TYPE=Release \
-              -DCMAKE_INSTALL_PREFIX=$GITHUB_WORKSPACE/hdf5-install \
+              -DCMAKE_INSTALL_PREFIX=$GITHUB_WORKSPACE/hdf5-develop-install \
               -DHDF5_ENABLE_PARALLEL=OFF \
               -DHDF5_ENABLE_THREADSAFE=OFF \
               -DBUILD_TESTING=OFF \
@@ -79,24 +88,38 @@ jobs:
         make -j$(nproc)
         make install
 
-    - name: Set up HDF5 environment
+    - name: Download and build HDF5 1.14.6
+      if: steps.cache-hdf5-1146.outputs.cache-hit != 'true'
       run: |
-        echo "$GITHUB_WORKSPACE/hdf5-install/bin" >> $GITHUB_PATH
-        echo "HDF5_ROOT=$GITHUB_WORKSPACE/hdf5-install" >> $GITHUB_ENV
-        echo "LD_LIBRARY_PATH=$GITHUB_WORKSPACE/hdf5-install/lib:$LD_LIBRARY_PATH" >> $GITHUB_ENV
-        echo "PKG_CONFIG_PATH=$GITHUB_WORKSPACE/hdf5-install/lib/pkgconfig:$PKG_CONFIG_PATH" >> $GITHUB_ENV
-
-    - name: Build NetCDF-C with HDF5 develop
-      run: |
+        cd $GITHUB_WORKSPACE
+        wget https://github.com/HDFGroup/hdf5/releases/download/hdf5_1.14.6/hdf5-1.14.6.tar.gz
+        tar -xzf hdf5-1.14.6.tar.gz
+        cd hdf5-1.14.6
         mkdir build
         cd build
         cmake -DCMAKE_BUILD_TYPE=Release \
-              -DCMAKE_INSTALL_PREFIX=$GITHUB_WORKSPACE/netcdf-install \
+              -DCMAKE_INSTALL_PREFIX=$GITHUB_WORKSPACE/hdf5-1146-install \
+              -DHDF5_BUILD_TOOLS=ON \
+              -DHDF5_BUILD_EXAMPLES=OFF \
+              -DHDF5_BUILD_TESTS=OFF \
+              -DHDF5_ENABLE_PARALLEL=OFF \
+              -DHDF5_ENABLE_Z_LIB_SUPPORT=ON \
+              -DHDF5_ENABLE_SZIP_SUPPORT=ON \
+              ..
+        make -j$(nproc)
+        make install
+
+    - name: Build NetCDF-C with HDF5 develop
+      run: |
+        mkdir build-develop
+        cd build-develop
+        cmake -DCMAKE_BUILD_TYPE=Release \
+              -DCMAKE_INSTALL_PREFIX=$GITHUB_WORKSPACE/netcdf-develop-install \
               -DENABLE_HDF5=ON \
               -DUSE_PARALLEL=OFF \
               -DHDF5_PARALLEL=OFF \
               -DUSE_PARALLEL4=OFF \
-              -DHDF5_ROOT=$GITHUB_WORKSPACE/hdf5-install \
+              -DHDF5_ROOT=$GITHUB_WORKSPACE/hdf5-develop-install \
               -DENABLE_PARALLEL4=OFF \
               -DENABLE_DAP=OFF \
               -DENABLE_LIBXML2=OFF \
@@ -109,40 +132,80 @@ jobs:
         make -j$(nproc)
         make install
 
-    - name: Set up NetCDF environment
+    - name: Build NetCDF-C with HDF5 1.14.6
       run: |
-        echo "$GITHUB_WORKSPACE/netcdf-install/bin" >> $GITHUB_PATH
-        echo "NETCDF_ROOT=$GITHUB_WORKSPACE/netcdf-install" >> $GITHUB_ENV
-        echo "LD_LIBRARY_PATH=$GITHUB_WORKSPACE/netcdf-install/lib:$LD_LIBRARY_PATH" >> $GITHUB_ENV
+        mkdir build-1146
+        cd build-1146
+        cmake -DCMAKE_BUILD_TYPE=Release \
+              -DCMAKE_INSTALL_PREFIX=$GITHUB_WORKSPACE/netcdf-1146-install \
+              -DENABLE_HDF5=ON \
+              -DUSE_PARALLEL=OFF \
+              -DHDF5_PARALLEL=OFF \
+              -DUSE_PARALLEL4=OFF \
+              -DHDF5_ROOT=$GITHUB_WORKSPACE/hdf5-1146-install \
+              -DENABLE_PARALLEL4=OFF \
+              -DENABLE_DAP=OFF \
+              -DENABLE_LIBXML2=OFF \
+              -DENABLE_NCZARR=OFF \
+              -DENABLE_BYTERANGE=OFF \
+              -DBUILD_UTILITIES=ON \
+              -DBUILD_TESTING=ON \
+              -DENABLE_BENCHMARKS=ON \
+              ..
+        make -j$(nproc)
+        make install
 
-    - name: Build benchmark test
+    - name: Build benchmark tests for both versions
       run: |
-        cd build
-        # Build the specific benchmark test
+        cd build-develop
+        make -j$(nproc) -C nc_perf tst_chunks3
+        cd ../build-1146
         make -j$(nproc) -C nc_perf tst_chunks3
 
     - name: Run NetCDF-4 Performance Benchmarks
       run: |
-        cd build/nc_perf
-
         # Create results directory
         mkdir -p $GITHUB_WORKSPACE/benchmark-results
 
-        # Define test configurations for different scenarios
         echo "Running NetCDF-4 Chunking Performance Benchmarks..."
 
-        # Single comprehensive test run - tst_chunks3 runs all scenarios internally
-        echo "=== NetCDF-4 Chunking Performance Benchmarks ===" | tee $GITHUB_WORKSPACE/benchmark-results/tst_chunks3_results.txt
-        echo "Testing with deflate level: 6" | tee -a $GITHUB_WORKSPACE/benchmark-results/tst_chunks3_results.txt
-        ./tst_chunks3 6 512 64 512 64 512 64 | tee -a $GITHUB_WORKSPACE/benchmark-results/tst_chunks3_results.txt
+        # Run benchmarks with HDF5 develop
+        echo "=== NetCDF-4 with HDF5 develop ===" | tee $GITHUB_WORKSPACE/benchmark-results/tst_chunks3_develop.txt
+        echo "Testing with deflate level: 6" | tee -a $GITHUB_WORKSPACE/benchmark-results/tst_chunks3_develop.txt
+        cd build-develop/nc_perf
+        export LD_LIBRARY_PATH=$GITHUB_WORKSPACE/hdf5-develop-install/lib:$GITHUB_WORKSPACE/netcdf-develop-install/lib:$LD_LIBRARY_PATH
+        ./tst_chunks3 6 512 64 512 64 512 64 | tee -a $GITHUB_WORKSPACE/benchmark-results/tst_chunks3_develop.txt
+
+        # Run benchmarks with HDF5 1.14.6
+        echo "=== NetCDF-4 with HDF5 1.14.6 ===" | tee $GITHUB_WORKSPACE/benchmark-results/tst_chunks3_1146.txt
+        echo "Testing with deflate level: 6" | tee -a $GITHUB_WORKSPACE/benchmark-results/tst_chunks3_1146.txt
+        cd $GITHUB_WORKSPACE/build-1146/nc_perf
+        export LD_LIBRARY_PATH=$GITHUB_WORKSPACE/hdf5-1146-install/lib:$GITHUB_WORKSPACE/netcdf-1146-install/lib:$LD_LIBRARY_PATH
+        ./tst_chunks3 6 512 64 512 64 512 64 | tee -a $GITHUB_WORKSPACE/benchmark-results/tst_chunks3_1146.txt
 
     - name: Process benchmark results to JSON
       run: |
         cd $GITHUB_WORKSPACE
+
+        # Process develop results
         python3 .github/scripts/parse_benchmark_results.py \
           benchmark-results \
-          benchmark-results/benchmark_data.json \
-          ${{ steps.hdf5-hash.outputs.hash }}
+          benchmark-results/benchmark_data_develop.json \
+          ${{ steps.hdf5-hash.outputs.hash }} \
+          develop
+
+        # Process 1.14.6 results
+        python3 .github/scripts/parse_benchmark_results.py \
+          benchmark-results \
+          benchmark-results/benchmark_data_1146.json \
+          "hdf5-1.14.6" \
+          1146
+
+        # Combine results for comparison plots
+        python3 .github/scripts/combine_benchmark_results.py \
+          benchmark-results/benchmark_data_develop.json \
+          benchmark-results/benchmark_data_1146.json \
+          benchmark-results/benchmark_data.json
 
     - name: Store benchmark result
       uses: benchmark-action/github-action-benchmark@v1
