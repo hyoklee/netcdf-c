@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1758609224574,
+  "lastUpdate": 1758695600568,
   "repoUrl": "https://github.com/hyoklee/netcdf-c",
   "entries": {
     "NetCDF-4 Chunking Performance Benchmarks": [
@@ -1312,6 +1312,136 @@ window.BENCHMARK_DATA = {
             "value": 67,
             "unit": "sec",
             "extra": "HDF5: 507d7cec"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "name": "H. Joe Lee",
+            "username": "hyoklee",
+            "email": "hyoklee@hdfgroup.org"
+          },
+          "committer": {
+            "name": "H. Joe Lee",
+            "username": "hyoklee",
+            "email": "hyoklee@hdfgroup.org"
+          },
+          "id": "ff3287c93384796128aa1393c75b00c150f1e837",
+          "message": "fix: prevent hanging in tst_chunks3 by adding disk space checks\n\nAdd disk space validation to tst_chunks3 benchmark test to prevent\nhanging when insufficient disk space is available. The test now:\n- Checks available disk space before execution\n- Calculates required space for 3 variables with 20% overhead\n- Exits gracefully with error message if space insufficient\n- Monitors disk space during write operations\n- Uses portable statvfs() on Linux/Unix/macOS systems\n\nThis resolves hanging issues in GitHub Actions medium-size tests\nwhere ~8.6GB is required but only ~25GB is available on runners.\n\n🤖 Generated with [Claude Code](https://claude.ai/code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>",
+          "timestamp": "2025-09-22T01:00:43Z",
+          "url": "https://github.com/hyoklee/netcdf-c/commit/ff3287c93384796128aa1393c75b00c150f1e837"
+        },
+        "date": 1758695597238,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "chunked_read_1x512x64_chunks_512x64x64_ctx_deflate6",
+            "value": 0.16,
+            "unit": "sec",
+            "extra": "HDF5: ef171e05"
+          },
+          {
+            "name": "chunked_read_512x1x64_chunks_512x64x64_ctx_deflate6",
+            "value": 1.1,
+            "unit": "sec",
+            "extra": "HDF5: ef171e05"
+          },
+          {
+            "name": "chunked_read_512x512x64_chunks_1x64x64_ctx_deflate6",
+            "value": 0.17,
+            "unit": "sec",
+            "extra": "HDF5: ef171e05"
+          },
+          {
+            "name": "chunked_write_1x512x64_chunks_512x64x64_ctx_deflate6",
+            "value": 0.43,
+            "unit": "sec",
+            "extra": "HDF5: ef171e05"
+          },
+          {
+            "name": "chunked_write_512x1x64_chunks_512x64x64_ctx_deflate6",
+            "value": 1.1,
+            "unit": "sec",
+            "extra": "HDF5: ef171e05"
+          },
+          {
+            "name": "chunked_write_512x512x64_chunks_1x64x64_ctx_deflate6",
+            "value": 0.28,
+            "unit": "sec",
+            "extra": "HDF5: ef171e05"
+          },
+          {
+            "name": "compressed_read_1x512x64_chunks_512x64x64_deflate6",
+            "value": 1,
+            "unit": "sec",
+            "extra": "HDF5: ef171e05"
+          },
+          {
+            "name": "compressed_read_512x1x64_chunks_512x64x64_deflate6",
+            "value": 1.4,
+            "unit": "sec",
+            "extra": "HDF5: ef171e05"
+          },
+          {
+            "name": "compressed_read_512x512x64_chunks_1x64x64_deflate6",
+            "value": 0.67,
+            "unit": "sec",
+            "extra": "HDF5: ef171e05"
+          },
+          {
+            "name": "compressed_write_1x512x64_chunks_512x64x64_deflate6",
+            "value": 2.8,
+            "unit": "sec",
+            "extra": "HDF5: ef171e05"
+          },
+          {
+            "name": "compressed_write_512x1x64_chunks_512x64x64_deflate6",
+            "value": 4,
+            "unit": "sec",
+            "extra": "HDF5: ef171e05"
+          },
+          {
+            "name": "compressed_write_512x512x64_chunks_1x64x64_deflate6",
+            "value": 3.7,
+            "unit": "sec",
+            "extra": "HDF5: ef171e05"
+          },
+          {
+            "name": "contiguous_read_1x512x512_ctx_deflate6",
+            "value": 0.044,
+            "unit": "sec",
+            "extra": "HDF5: ef171e05"
+          },
+          {
+            "name": "contiguous_read_512x1x512_ctx_deflate6",
+            "value": 1.4,
+            "unit": "sec",
+            "extra": "HDF5: ef171e05"
+          },
+          {
+            "name": "contiguous_read_512x512x1_ctx_deflate6",
+            "value": 25,
+            "unit": "sec",
+            "extra": "HDF5: ef171e05"
+          },
+          {
+            "name": "contiguous_write_1x512x512_ctx_deflate6",
+            "value": 0.4,
+            "unit": "sec",
+            "extra": "HDF5: ef171e05"
+          },
+          {
+            "name": "contiguous_write_512x1x512_ctx_deflate6",
+            "value": 3.9,
+            "unit": "sec",
+            "extra": "HDF5: ef171e05"
+          },
+          {
+            "name": "contiguous_write_512x512x1_ctx_deflate6",
+            "value": 67,
+            "unit": "sec",
+            "extra": "HDF5: ef171e05"
           }
         ]
       }
