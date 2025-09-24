@@ -2,7 +2,7 @@ name: NetCDF-4 Performance Benchmark 1.10
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main- ]
   workflow_dispatch:
 
 jobs:
