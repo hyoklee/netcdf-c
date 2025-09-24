@@ -48,8 +48,12 @@ def parse_timing_line(line: str) -> Dict[str, Any]:
         if part == 'sec' and i > 0:
             try:
                 time_sec = float(parts[i-1])
+                # Check for invalid values (NaN, infinity, negative)
+                if not (time_sec > 0 and time_sec < float('inf')):
+                    print(f"Warning: Invalid timing value {time_sec} in line: {line.strip()}")
+                    return None
                 break
-            except ValueError:
+            except (ValueError, TypeError):
                 continue
 
     if time_sec is None:
@@ -207,11 +211,17 @@ def create_benchmark_json(benchmarks: List[Dict[str, Any]]) -> List[Dict[str, An
     sorted_benchmarks = sorted(benchmarks, key=lambda x: x["name"])
 
     for bench in sorted_benchmarks:
+        # Validate the benchmark value
+        value = bench["value"]
+        if not isinstance(value, (int, float)) or not (value > 0 and value < float('inf')):
+            print(f"Warning: Skipping benchmark '{bench['name']}' with invalid value: {value}")
+            continue
+
         # Create base benchmark entry
         benchmark_entry = {
             "name": bench["name"],
             "unit": bench["unit"],
-            "value": bench["value"]
+            "value": value
         }
 
         # Add HDF5 commit hash information if available

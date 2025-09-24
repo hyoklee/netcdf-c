@@ -29,74 +29,41 @@ def load_benchmark_results(file_path: str) -> List[Dict[str, Any]]:
 def combine_benchmark_results(develop_results: List[Dict[str, Any]],
                             v1146_results: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     """
-    Combine benchmark results from two HDF5 versions into grouped series format.
+    Combine benchmark results from two HDF5 versions into individual benchmarks
+    for github-action-benchmark compatibility.
 
-    Creates benchmark entries with series data containing both HDF5 versions
-    for dual-line comparison plots.
+    Creates separate benchmark entries for each HDF5 version.
     """
     combined_results = []
 
-    # Create a mapping of benchmark names to results
-    develop_benchmarks = {bench['name']: bench for bench in develop_results}
-    v1146_benchmarks = {bench['name']: bench for bench in v1146_results}
+    # Add all develop benchmarks with version suffix
+    for bench in develop_results:
+        # Validate benchmark value
+        value = bench.get("value")
+        if not isinstance(value, (int, float)) or not (value > 0 and value < float('inf')):
+            print(f"Warning: Skipping develop benchmark '{bench['name']}' with invalid value: {value}")
+            continue
 
-    # Find all unique benchmark names
-    all_benchmark_names = set(develop_benchmarks.keys()) | set(v1146_benchmarks.keys())
-
-    for benchmark_name in sorted(all_benchmark_names):
-        develop_bench = develop_benchmarks.get(benchmark_name)
-        v1146_bench = v1146_benchmarks.get(benchmark_name)
-
-        # Only create grouped benchmarks if we have both versions
-        if develop_bench and v1146_bench:
-            # Create series data for both versions
-            series_data = []
-
-            # Add HDF5 1.14.6 data (first in series for consistent ordering)
-            v1146_series = {
-                "name": "HDF5 1.14.6",
-                "value": v1146_bench["value"],
-                "unit": v1146_bench["unit"],
-                "extra": "HDF5 1.14.6"
-            }
-            series_data.append(v1146_series)
-
-            # Add HDF5 develop data
-            develop_series = {
-                "name": "HDF5 develop",
-                "value": develop_bench["value"],
-                "unit": develop_bench["unit"]
-            }
-            # Preserve original extra field with HDF5 commit info
-            if 'extra' in develop_bench:
-                develop_series['extra'] = f"HDF5 develop - {develop_bench['extra']}"
-            else:
-                develop_series['extra'] = "HDF5 develop"
-            series_data.append(develop_series)
-
-            # Create the grouped benchmark entry
-            grouped_benchmark = {
-                "name": benchmark_name,
-                "series": series_data
-            }
-            combined_results.append(grouped_benchmark)
-
+        individual_bench = bench.copy()
+        individual_bench['name'] = f"{bench['name']}_hdf5_develop"
+        if 'extra' in individual_bench:
+            individual_bench['extra'] = f"HDF5 develop - {individual_bench['extra']}"
         else:
-            # If we only have one version, keep it as individual benchmark
-            if develop_bench:
-                individual_bench = develop_bench.copy()
-                individual_bench['name'] = f"{benchmark_name}_hdf5_develop"
-                if 'extra' in individual_bench:
-                    individual_bench['extra'] = f"HDF5 develop - {individual_bench['extra']}"
-                else:
-                    individual_bench['extra'] = "HDF5 develop"
-                combined_results.append(individual_bench)
+            individual_bench['extra'] = "HDF5 develop"
+        combined_results.append(individual_bench)
 
-            if v1146_bench:
-                individual_bench = v1146_bench.copy()
-                individual_bench['name'] = f"{benchmark_name}_hdf5_1146"
-                individual_bench['extra'] = "HDF5 1.14.6"
-                combined_results.append(individual_bench)
+    # Add all 1.14.6 benchmarks with version suffix
+    for bench in v1146_results:
+        # Validate benchmark value
+        value = bench.get("value")
+        if not isinstance(value, (int, float)) or not (value > 0 and value < float('inf')):
+            print(f"Warning: Skipping v1.14.6 benchmark '{bench['name']}' with invalid value: {value}")
+            continue
+
+        individual_bench = bench.copy()
+        individual_bench['name'] = f"{bench['name']}_hdf5_1146"
+        individual_bench['extra'] = "HDF5 1.14.6"
+        combined_results.append(individual_bench)
 
     return combined_results
 
@@ -136,29 +103,21 @@ def main():
     print(f"Combined benchmark results written to {output_file}")
     print(f"Total combined benchmarks: {len(combined_results)}")
 
-    # Count grouped vs individual benchmarks
-    grouped_count = len([b for b in combined_results if 'series' in b])
-    individual_count = len(combined_results) - grouped_count
+    # Count benchmarks by version
+    develop_count = len([b for b in combined_results if "_hdf5_develop" in b['name']])
+    v1146_count = len([b for b in combined_results if "_hdf5_1146" in b['name']])
 
-    print(f"  Grouped benchmarks (with series): {grouped_count}")
-    print(f"  Individual benchmarks: {individual_count}")
+    print(f"  HDF5 develop benchmarks: {develop_count}")
+    print(f"  HDF5 1.14.6 benchmarks: {v1146_count}")
 
-    # Show details of grouped benchmarks
-    if grouped_count > 0:
-        print(f"\nGrouped benchmark examples:")
-        grouped_benchmarks = [b for b in combined_results if 'series' in b]
-        for bench in sorted(grouped_benchmarks[:5], key=lambda x: x['name']):  # Show first 5
-            series_versions = [s['name'] for s in bench['series']]
-            print(f"  ✓ {bench['name']} ({', '.join(series_versions)})")
-
-    # Show individual benchmarks if any
-    if individual_count > 0:
-        print(f"\nIndividual benchmarks (missing pair):")
-        individual_benchmarks = [b for b in combined_results if 'series' not in b]
-        for bench in sorted(individual_benchmarks[:5], key=lambda x: x['name']):  # Show first 5
-            version = "develop" if "_hdf5_develop" in bench['name'] else "1.14.6"
-            base_name = bench['name'].replace('_hdf5_develop', '').replace('_hdf5_1146', '')
-            print(f"  ✗ {base_name} (only {version})")
+    # Show example benchmarks
+    print(f"\nExample benchmarks:")
+    for bench in sorted(combined_results[:5], key=lambda x: x['name']):  # Show first 5
+        version = "develop" if "_hdf5_develop" in bench['name'] else "1.14.6"
+        base_name = bench['name'].replace('_hdf5_develop', '').replace('_hdf5_1146', '')
+        value = bench.get('value', 'N/A')
+        unit = bench.get('unit', '')
+        print(f"  ✓ {base_name} (HDF5 {version}): {value} {unit}")
 
 
 if __name__ == "__main__":
