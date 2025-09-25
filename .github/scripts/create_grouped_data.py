@@ -69,25 +69,35 @@ def group_benchmarks(data: Dict[str, Any]) -> Dict[str, Any]:
 
             for bench in entry['benches']:
                 bench_name = bench['name']
+                extra_info = bench.get('extra', '')
 
-                # Extract base name and version
+                # Extract base name and version based on the extra field and name pattern
                 base_name = None
                 version_info = None
 
-                if bench_name.endswith('_hdf5_develop'):
-                    base_name = bench_name[:-13]  # Remove '_hdf5_develop'
+                # Check for HDF5 version indicators in extra field or benchmark name
+                if 'hdf5_develop' in bench_name or 'HDF5 develop' in extra_info:
+                    # Remove version suffix from name if present
+                    if bench_name.endswith('_hdf5_develop'):
+                        base_name = bench_name[:-13]
+                    else:
+                        base_name = bench_name
                     version_info = {
                         'name': 'HDF5 develop',
                         'suffix': '_hdf5_develop'
                     }
-                elif bench_name.endswith('_hdf5_1146'):
-                    base_name = bench_name[:-11]  # Remove '_hdf5_1146'
+                elif 'hdf5_1146' in bench_name or 'HDF5 1.14.6' in extra_info:
+                    # Remove version suffix from name if present
+                    if bench_name.endswith('_hdf5_1146'):
+                        base_name = bench_name[:-10]  # _hdf5_1146 is 10 characters
+                    else:
+                        base_name = bench_name
                     version_info = {
                         'name': 'HDF5 1.14.6',
                         'suffix': '_hdf5_1146'
                     }
                 else:
-                    # If no version suffix, treat as individual benchmark
+                    # If no version info found, treat as individual benchmark
                     base_name = bench_name
                     version_info = None
 
@@ -164,7 +174,7 @@ def write_grouped_data_js(data: Dict[str, Any], output_file: str):
     """Write the grouped data as a JavaScript file."""
     try:
         with open(output_file, 'w') as f:
-            f.write('window.GROUPED_BENCHMARK_DATA = ')
+            f.write('window.BENCHMARK_DATA = ')
             json.dump(data, f, indent=2)
             f.write(';\n')
 
