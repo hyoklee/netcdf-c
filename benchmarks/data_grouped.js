@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1760164409324,
+  "lastUpdate": 1760250664048,
   "repoUrl": "https://github.com/hyoklee/netcdf-c",
   "entries": {
     "NetCDF-4 Chunking Performance Benchmarks": [
@@ -6875,6 +6875,334 @@ window.BENCHMARK_DATA = {
               {
                 "name": "HDF5 develop",
                 "value": 6.9,
+                "unit": "sec",
+                "extra": "HDF5 develop - HDF5: 61cfe6ca"
+              }
+            ]
+          },
+          {
+            "name": "contiguous_write_512x512x1_ctx_deflate6",
+            "series": [
+              {
+                "name": "HDF5 1.14.6",
+                "value": 64,
+                "unit": "sec",
+                "extra": "HDF5 1.14.6"
+              },
+              {
+                "name": "HDF5 develop",
+                "value": 64,
+                "unit": "sec",
+                "extra": "HDF5 develop - HDF5: 61cfe6ca"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "name": "H. Joe Lee",
+            "username": "hyoklee",
+            "email": "hyoklee@hdfgroup.org"
+          },
+          "committer": {
+            "name": "H. Joe Lee",
+            "username": "hyoklee",
+            "email": "hyoklee@hdfgroup.org"
+          },
+          "id": "c4a987a946ab0e494d0c2a083f895bea7253c35d",
+          "message": "fix: correct version suffix parsing in create_grouped_data.py\n\n- Fix string slicing for _hdf5_1146 suffix (10 chars, not 11)\n- Improve version detection logic to check both name and extra fields\n- Change output variable from window.GROUPED_BENCHMARK_DATA to window.BENCHMARK_DATA\n- Now correctly groups benchmarks by base name with series format\n- All benchmarks with both HDF5 versions are properly paired\n\n\ud83e\udd16 Generated with [Claude Code](https://claude.ai/code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>",
+          "timestamp": "2025-09-25T01:08:07Z",
+          "url": "https://github.com/hyoklee/netcdf-c/commit/c4a987a946ab0e494d0c2a083f895bea7253c35d"
+        },
+        "date": 1760250660158,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "chunked_read_1x512x64_chunks_512x64x64_ctx_deflate6",
+            "series": [
+              {
+                "name": "HDF5 1.14.6",
+                "value": 0.13,
+                "unit": "sec",
+                "extra": "HDF5 1.14.6"
+              },
+              {
+                "name": "HDF5 develop",
+                "value": 0.14,
+                "unit": "sec",
+                "extra": "HDF5 develop - HDF5: 61cfe6ca"
+              }
+            ]
+          },
+          {
+            "name": "chunked_read_512x1x64_chunks_512x64x64_ctx_deflate6",
+            "series": [
+              {
+                "name": "HDF5 1.14.6",
+                "value": 1,
+                "unit": "sec",
+                "extra": "HDF5 1.14.6"
+              },
+              {
+                "name": "HDF5 develop",
+                "value": 1,
+                "unit": "sec",
+                "extra": "HDF5 develop - HDF5: 61cfe6ca"
+              }
+            ]
+          },
+          {
+            "name": "chunked_read_512x512x64_chunks_1x64x64_ctx_deflate6",
+            "series": [
+              {
+                "name": "HDF5 1.14.6",
+                "value": 0.15,
+                "unit": "sec",
+                "extra": "HDF5 1.14.6"
+              },
+              {
+                "name": "HDF5 develop",
+                "value": 0.18,
+                "unit": "sec",
+                "extra": "HDF5 develop - HDF5: 61cfe6ca"
+              }
+            ]
+          },
+          {
+            "name": "chunked_write_1x512x64_chunks_512x64x64_ctx_deflate6",
+            "series": [
+              {
+                "name": "HDF5 1.14.6",
+                "value": 0.42,
+                "unit": "sec",
+                "extra": "HDF5 1.14.6"
+              },
+              {
+                "name": "HDF5 develop",
+                "value": 0.43,
+                "unit": "sec",
+                "extra": "HDF5 develop - HDF5: 61cfe6ca"
+              }
+            ]
+          },
+          {
+            "name": "chunked_write_512x1x64_chunks_512x64x64_ctx_deflate6",
+            "series": [
+              {
+                "name": "HDF5 1.14.6",
+                "value": 1.1,
+                "unit": "sec",
+                "extra": "HDF5 1.14.6"
+              },
+              {
+                "name": "HDF5 develop",
+                "value": 1,
+                "unit": "sec",
+                "extra": "HDF5 develop - HDF5: 61cfe6ca"
+              }
+            ]
+          },
+          {
+            "name": "chunked_write_512x512x64_chunks_1x64x64_ctx_deflate6",
+            "series": [
+              {
+                "name": "HDF5 1.14.6",
+                "value": 0.27,
+                "unit": "sec",
+                "extra": "HDF5 1.14.6"
+              },
+              {
+                "name": "HDF5 develop",
+                "value": 0.28,
+                "unit": "sec",
+                "extra": "HDF5 develop - HDF5: 61cfe6ca"
+              }
+            ]
+          },
+          {
+            "name": "compressed_read_1x512x64_chunks_512x64x64_deflate6",
+            "series": [
+              {
+                "name": "HDF5 1.14.6",
+                "value": 1,
+                "unit": "sec",
+                "extra": "HDF5 1.14.6"
+              },
+              {
+                "name": "HDF5 develop",
+                "value": 1,
+                "unit": "sec",
+                "extra": "HDF5 develop - HDF5: 61cfe6ca"
+              }
+            ]
+          },
+          {
+            "name": "compressed_read_512x1x64_chunks_512x64x64_deflate6",
+            "series": [
+              {
+                "name": "HDF5 1.14.6",
+                "value": 1.2,
+                "unit": "sec",
+                "extra": "HDF5 1.14.6"
+              },
+              {
+                "name": "HDF5 develop",
+                "value": 1.3,
+                "unit": "sec",
+                "extra": "HDF5 develop - HDF5: 61cfe6ca"
+              }
+            ]
+          },
+          {
+            "name": "compressed_read_512x512x64_chunks_1x64x64_deflate6",
+            "series": [
+              {
+                "name": "HDF5 1.14.6",
+                "value": 0.65,
+                "unit": "sec",
+                "extra": "HDF5 1.14.6"
+              },
+              {
+                "name": "HDF5 develop",
+                "value": 0.66,
+                "unit": "sec",
+                "extra": "HDF5 develop - HDF5: 61cfe6ca"
+              }
+            ]
+          },
+          {
+            "name": "compressed_write_1x512x64_chunks_512x64x64_deflate6",
+            "series": [
+              {
+                "name": "HDF5 1.14.6",
+                "value": 2.8,
+                "unit": "sec",
+                "extra": "HDF5 1.14.6"
+              },
+              {
+                "name": "HDF5 develop",
+                "value": 2.8,
+                "unit": "sec",
+                "extra": "HDF5 develop - HDF5: 61cfe6ca"
+              }
+            ]
+          },
+          {
+            "name": "compressed_write_512x1x64_chunks_512x64x64_deflate6",
+            "series": [
+              {
+                "name": "HDF5 1.14.6",
+                "value": 3.8,
+                "unit": "sec",
+                "extra": "HDF5 1.14.6"
+              },
+              {
+                "name": "HDF5 develop",
+                "value": 3.9,
+                "unit": "sec",
+                "extra": "HDF5 develop - HDF5: 61cfe6ca"
+              }
+            ]
+          },
+          {
+            "name": "compressed_write_512x512x64_chunks_1x64x64_deflate6",
+            "series": [
+              {
+                "name": "HDF5 1.14.6",
+                "value": 3.7,
+                "unit": "sec",
+                "extra": "HDF5 1.14.6"
+              },
+              {
+                "name": "HDF5 develop",
+                "value": 3.7,
+                "unit": "sec",
+                "extra": "HDF5 develop - HDF5: 61cfe6ca"
+              }
+            ]
+          },
+          {
+            "name": "contiguous_read_1x512x512_ctx_deflate6",
+            "series": [
+              {
+                "name": "HDF5 1.14.6",
+                "value": 0.041,
+                "unit": "sec",
+                "extra": "HDF5 1.14.6"
+              },
+              {
+                "name": "HDF5 develop",
+                "value": 0.045,
+                "unit": "sec",
+                "extra": "HDF5 develop - HDF5: 61cfe6ca"
+              }
+            ]
+          },
+          {
+            "name": "contiguous_read_512x1x512_ctx_deflate6",
+            "series": [
+              {
+                "name": "HDF5 1.14.6",
+                "value": 1.3,
+                "unit": "sec",
+                "extra": "HDF5 1.14.6"
+              },
+              {
+                "name": "HDF5 develop",
+                "value": 1.4,
+                "unit": "sec",
+                "extra": "HDF5 develop - HDF5: 61cfe6ca"
+              }
+            ]
+          },
+          {
+            "name": "contiguous_read_512x512x1_ctx_deflate6",
+            "series": [
+              {
+                "name": "HDF5 1.14.6",
+                "value": 23,
+                "unit": "sec",
+                "extra": "HDF5 1.14.6"
+              },
+              {
+                "name": "HDF5 develop",
+                "value": 23,
+                "unit": "sec",
+                "extra": "HDF5 develop - HDF5: 61cfe6ca"
+              }
+            ]
+          },
+          {
+            "name": "contiguous_write_1x512x512_ctx_deflate6",
+            "series": [
+              {
+                "name": "HDF5 1.14.6",
+                "value": 0.4,
+                "unit": "sec",
+                "extra": "HDF5 1.14.6"
+              },
+              {
+                "name": "HDF5 develop",
+                "value": 0.41,
+                "unit": "sec",
+                "extra": "HDF5 develop - HDF5: 61cfe6ca"
+              }
+            ]
+          },
+          {
+            "name": "contiguous_write_512x1x512_ctx_deflate6",
+            "series": [
+              {
+                "name": "HDF5 1.14.6",
+                "value": 3.7,
+                "unit": "sec",
+                "extra": "HDF5 1.14.6"
+              },
+              {
+                "name": "HDF5 develop",
+                "value": 6.6,
                 "unit": "sec",
                 "extra": "HDF5 develop - HDF5: 61cfe6ca"
               }
