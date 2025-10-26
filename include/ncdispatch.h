@@ -80,7 +80,7 @@
 #define ATOMICTYPEMAX3 NC_DOUBLE
 #define ATOMICTYPEMAX5 NC_UINT64
 
-#if !defined HDF5_PARALLEL && !defined USE_PNETCDF
+#if !defined HDF5_PARALLEL && !defined USE_PNETCDF && !defined(MPI_COMM_WORLD)
 typedef int MPI_Comm;
 typedef int MPI_Info;
 #define MPI_COMM_WORLD 0
