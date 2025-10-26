@@ -8,11 +8,11 @@ Functions for inquiring about variables.
 #include "config.h"
 #include "netcdf.h"
 #include "netcdf_filter.h"
-#include "ncdispatch.h"
-#include "nc4internal.h"
 #ifdef USE_HDF5
 #include <hdf5.h>
 #endif /* USE_HDF5 */
+#include "ncdispatch.h"
+#include "nc4internal.h"
 
 /** \name Learning about Variables
 
