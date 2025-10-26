@@ -17,13 +17,12 @@
 
 #include "netcdf.h"
 #include "netcdf_filter.h"
-#include "ncdispatch.h"
-#include "nc4internal.h"
-#include "nclog.h"
-
 #ifdef USE_HDF5
 #include "hdf5internal.h"
 #endif
+#include "ncdispatch.h"
+#include "nc4internal.h"
+#include "nclog.h"
 
 #ifdef NETCDF_ENABLE_NCZARR
 #include "zdispatch.h"
