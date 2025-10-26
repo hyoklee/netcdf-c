@@ -9,16 +9,16 @@
 #include <mpi.h>
 #endif
 
-#include "ncdispatch.h"
-
-#ifdef USE_NETCDF4
-#include "nc4internal.h"
-#endif
-
 #ifdef USE_HDF5
 #include "hdf5internal.h"
 extern int NC_HDF5_initialize(void);
 extern int NC_HDF5_finalize(void);
+#endif
+
+#include "ncdispatch.h"
+
+#ifdef USE_NETCDF4
+#include "nc4internal.h"
 #endif
 
 #ifdef NETCDF_ENABLE_DAP2
