@@ -8,12 +8,16 @@
  * @author Ed Hartnett
  */
 
+/* Include HDF5 headers first, before the header guard. If HDF5 was built
+ * with MPI support, this will include mpi.h and define MPI types, preventing
+ * ncdispatch.h from defining dummy MPI types that would conflict */
+#include <hdf5.h>
+#include <hdf5_hl.h>
+
 #ifndef _HDF5INTERNAL_
 #define _HDF5INTERNAL_
 
 #include "config.h"
-#include <hdf5.h>
-#include <hdf5_hl.h>
 #include "nc4internal.h"
 #include "ncdimscale.h"
 #include "nc4dispatch.h"
