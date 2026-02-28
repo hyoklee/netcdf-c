@@ -79,6 +79,7 @@ TESTS += run_notzarr.sh
 
 if NETCDF_ENABLE_EXTERNAL_SERVER_TESTS
 TESTS += run_external.sh
+TESTS += run_s3_credentials.sh
 endif
 
 # Unlimited Dimension tests (at least in part)
@@ -153,6 +154,7 @@ TESTS += run_nczfilter.sh
 check_PROGRAMS += testfilter testfilter_misc testfilter_order testfilter_repeat testfilter_multi
 TESTS += run_filter.sh 
 TESTS += run_specific_filters.sh
+TESTS += run_filter_errors.sh
 
 if AX_DISABLE
 # This test is too dangerous to run in a parallel make environment.
@@ -209,10 +211,10 @@ EXTRA_DIST = CMakeLists.txt \
 run_ut_map.sh run_ut_mapapi.sh run_ut_misc.sh run_ncgen4.sh \
 run_nccopyz.sh run_fillonlyz.sh run_chunkcases.sh test_nczarr.sh run_perf_chunks1.sh \
 run_purezarr.sh run_interop.sh run_misc.sh \
-run_filter.sh \
+run_filter.sh run_filter_errors.sh\
 run_newformat.sh run_nczarr_fill.sh run_quantize.sh \
 run_jsonconvention.sh run_nczfilter.sh run_unknown.sh \
-run_scalar.sh run_strings.sh run_nulls.sh run_notzarr.sh run_external.sh \
+run_scalar.sh run_strings.sh run_nulls.sh run_notzarr.sh run_external.sh run_s3_credentials.sh\
 run_unlim_io.sh run_corrupt.sh run_oldkeys.sh run_xarray_misc.sh
 
 EXTRA_DIST += \
