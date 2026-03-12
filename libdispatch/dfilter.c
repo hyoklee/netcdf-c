@@ -68,7 +68,7 @@ done:
 }
 
 /**
-Find the the param info about filter (if any)
+Find the param info about filter (if any)
 associated with a variable and with specified id.
 Assumes HDF5 format using unsigned ints.
 
@@ -229,7 +229,9 @@ done:
  * when compressing. (bzip2 default level is 9).
  *
  * @return 0 for success, error code otherwise.
+ * @since 4.9.0
  * @author Dennis Heimbigner, Ed Hartnett
+ * @ingroup variables
  */
 int
 nc_def_var_bzip2(int ncid, int varid, int level)
@@ -260,7 +262,9 @@ done:
  * bzip2 is in use. Ignored if NULL.
  *
  * @return 0 for success, error code otherwise.
+ * @since 4.9.0
  * @author Dennis Heimbigner, Ed Hartnett
+ * @ingroup variables
  */
 int
 nc_inq_var_bzip2(int ncid, int varid, int* hasfilterp, int *levelp)
@@ -297,7 +301,9 @@ done:
  * The lower the level, the faster the speed (at the cost of compression).
  *
  * @return 0 for success, error code otherwise.
+ * @since 4.9.0
  * @author Charlie Zender, Dennis Heimbigner, Ed Hartnett
+ * @ingroup variables
  */
 int
 nc_def_var_zstandard(int ncid, int varid, int level)
@@ -333,7 +339,9 @@ done:
  * Zstandard is in use. Ignored if NULL.
  *
  * @return 0 for success, error code otherwise.
+ * @since 4.9.0
  * @author Charlie Zender, Dennis Heimbigner, Ed Hartnett
+ * @ingroup variables
  */
 int
 nc_inq_var_zstandard(int ncid, int varid, int* hasfilterp, int *levelp)
@@ -373,6 +381,7 @@ done:
  * @param addshuffle If non-zero, turn on shuffle.
  *
  * @return 0 for success, error code otherwise.
+ * @since 4.9.0
  * @author Dennis Heimbigner
  * @ingroup variables
  */
@@ -424,7 +433,9 @@ done:
  * in use, if blosc is in use. Ignored if NULL.
  *
  * @return 0 for success, error code otherwise.
+ * @since 4.9.0
  * @author Dennis Heimbigner
+ * @ingroup variables
  */
 int
 nc_inq_var_blosc(int ncid, int varid, int* hasfilterp, unsigned* subcompressorp,
