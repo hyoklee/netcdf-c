@@ -180,7 +180,7 @@ ncz_sync_grp(NC_FILE_INFO_T* file, NC_GRP_INFO_T* grp, int isclose)
 
     /* build Z2GROUP contents */
     NCJnew(NCJ_DICT,&jgroup);
-    snprintf(version,sizeof(version),"%d",zinfo->zarr.zarr_version);
+    snprintf(version,sizeof(version),"%d",zinfo->format.zarr);
     if((stat = NCJaddstring(jgroup,NCJ_STRING,"zarr_format"))<0) {stat = NC_EINVAL; goto done;}
     if((stat = NCJaddstring(jgroup,NCJ_INT,version))<0) {stat = NC_EINVAL; goto done;}
 
@@ -192,10 +192,7 @@ ncz_sync_grp(NC_FILE_INFO_T* file, NC_GRP_INFO_T* grp, int isclose)
     if(!purezarr) {
         if(grp->parent == NULL) { /* Root group */
 	    /* create superblock */
-            snprintf(version,sizeof(version),"%lu.%lu.%lu",
-		 zinfo->zarr.nczarr_version.major,
-		 zinfo->zarr.nczarr_version.minor,
-		 zinfo->zarr.nczarr_version.release);
+            snprintf(version,sizeof(version),NCZARR_FORMAT_VERSION_TEMPLATE, zinfo->format.nczarr);
 	    NCJnew(NCJ_DICT,&jsuper);
 	    if((stat = NCJinsertstring(jsuper,"version",version))<0) {stat = NC_EINVAL; goto done;}
 	}
@@ -347,7 +344,7 @@ ncz_sync_var_meta(NC_FILE_INFO_T* file, NC_VAR_INFO_T* var, int isclose)
     NCJnew(NCJ_DICT,&jvar);
 
     /* zarr_format key */
-    snprintf(number,sizeof(number),"%d",zinfo->zarr.zarr_version);
+    snprintf(number,sizeof(number),"%d",zinfo->format.zarr);
     if((stat = NCJaddstring(jvar,NCJ_STRING,"zarr_format"))<0) {stat = NC_EINVAL; goto done;}
     if((stat = NCJaddstring(jvar,NCJ_INT,number))<0) {stat = NC_EINVAL; goto done;}
 
@@ -364,7 +361,7 @@ ncz_sync_var_meta(NC_FILE_INFO_T* file, NC_VAR_INFO_T* var, int isclose)
     /* Integer list defining the length of each dimension of the array.*/
     /* Create the list */
     NCJnew(NCJ_ARRAY,&jtmp);
-    if(zvar->scalar) {
+    if(zvar->scalar && !purezarr) {
 	NCJaddstring(jtmp,NCJ_INT,"1");
     } else for(i=0;i<var->ndims;i++) {
 	snprintf(number,sizeof(number),"%llu",shape[i]);
@@ -393,7 +390,7 @@ ncz_sync_var_meta(NC_FILE_INFO_T* file, NC_VAR_INFO_T* var, int isclose)
     if((stat = NCJaddstring(jvar,NCJ_STRING,"chunks"))<0) {stat = NC_EINVAL; goto done;}
     /* Create the list */
     NCJnew(NCJ_ARRAY,&jtmp);
-    if(zvar->scalar) {
+    if(zvar->scalar && !purezarr) {
 	NCJaddstring(jtmp,NCJ_INT,"1"); /* one chunk of size 1 */
     } else for(i=0;i<var->ndims;i++) {
 	size64_t len = var->chunksizes[i];
@@ -768,7 +765,7 @@ ncz_sync_atts(NC_FILE_INFO_T* file, NC_OBJ* container, NCindex* attlist, NCjson*
 	    */
 	    NCJnew(NCJ_ARRAY,&jdimrefs);
 	    /* Fake the scalar case */
-	    if(var->ndims == 0)
+	    if(var->ndims == 0 && !purezarr)
 	        NCJaddstring(jdimrefs,NCJ_STRING,XARRAYSCALAR);
 	    /* Walk the dimensions and capture the names */
 	    for(i=0;i<var->ndims;i++) {
@@ -1451,7 +1448,7 @@ define_var1(NC_FILE_INFO_T* file, NC_GRP_INFO_T* grp, const char* varname)
 	int version;
 	if((stat = NCJdictget(jvar,"zarr_format",&jvalue))<0) {stat = NC_EINVAL; goto done;}
 	sscanf(NCJstring(jvalue),"%d",&version);
-	if(version != zinfo->zarr.zarr_version)
+	if(version != zinfo->format.zarr)
 	    {stat = (THROW(NC_ENCZARR)); goto done;}
     }
 
@@ -1565,10 +1562,24 @@ define_var1(NC_FILE_INFO_T* file, NC_GRP_INFO_T* grp, const char* varname)
 	/* Process the rank */
 	zarr_rank = NCJarraylength(jvalue);
 	if(zarr_rank == 0) {
+	    // No shape, no chunks, no (xarray) dimensions => scalar
+	    if(zvar->xarray == NULL) {
+			// get xarray attributes
+			if((stat = ncz_read_atts(file,(NC_OBJ*)var))) goto done;
+	    }
+	    if(NC_NOERR == (stat = NCJdictget(jvar,"chunks",&jvalue)) && \
+			jvalue && NCJsort(jvalue) == NCJ_ARRAY && NCJarraylength(jvalue) == 0 && \
+			xarray && nclistlength(zvar->xarray) == 0) {
+			zvar->scalar = 1;
+			/* Save the rank of the variable */
+			if ((stat = nc4_var_set_ndims(var,1)))
+				goto done;
+	    }else{
 	    /* suppress variable */
 	    ZLOG(NCLOGWARN,"Empty shape for variable %s suppressed",var->hdr.name);
 	    suppress = 1;
 	    goto suppressvar;
+	    }
 	}
 
 	if(zvar->scalar) {
@@ -1782,90 +1793,6 @@ done:
     return ZUNTRACE(THROW(stat));
 }
 
-int
-ncz_read_superblock(NC_FILE_INFO_T* file, char** nczarrvp, char** zarrfp)
-{
-    int stat = NC_NOERR;
-    const NCjson* jnczgroup = NULL;
-    const NCjson* jnczattr = NULL;
-    const NCjson* jzgroup = NULL;
-    const NCjson* jsuper = NULL;
-    const NCjson* jtmp = NULL;
-    char* nczarr_version = NULL;
-    char* zarr_format = NULL;
-    NCZ_FILE_INFO_T* zinfo = NULL;
-    NC_GRP_INFO_T* root = NULL;
-    NCZ_GRP_INFO_T* zroot = NULL;
-    char* key = NULL;
-
-    ZTRACE(3,"file=%s",file->controller->path);
-
-    root = file->root_grp;
-    assert(root != NULL);
-
-    zinfo = (NCZ_FILE_INFO_T*)file->format_file_info;    
-    zroot = (NCZ_GRP_INFO_T*)root->format_grp_info;    
-
-    /* Construct grp key */
-    if((stat = NCZ_grpkey(root,&key))) goto done;
-
-    if((stat = NCZMD_fetch_json_group(zinfo, key, &zroot->zgroup.obj)) \
-        || NCZMD_fetch_json_attrs(zinfo, key, &zroot->zgroup.atts)) {
-            goto done;
-    }
-    jzgroup = zroot->zgroup.obj;    
-
-    /* Look for superblock; first in .zattrs and then in .zgroup */
-    if((stat = getnczarrkey((NC_OBJ*)root,NCZ_V2_SUPERBLOCK,&jsuper))) goto done;
-
-    /* Set the format flags */
-
-    /* Set where _nczarr_xxx are stored */
-    if(jsuper != NULL && zroot->zgroup.nczv1) {
-	zinfo->controls.flags |= FLAG_NCZARR_KEY;
-	/* Also means file is read only */
-	file->no_write = 1;
-    }
-    
-    if(jsuper == NULL) {
-	/* See if this is looks like a NCZarr/Zarr dataset at all
-           by looking for anything here of the form ".z*" */
-        if ((zinfo->metadata.flags & ZARR_CONSOLIDATED) == 0 && (stat = ncz_validate(file))) goto done;
-	/* ok, assume pure zarr with no groups */
-	zinfo->controls.flags |= FLAG_PUREZARR;	
-	if(zarr_format == NULL) zarr_format = strdup("2");
-    }
-
-    /* Look for _nczarr_group */
-    if((stat = getnczarrkey((NC_OBJ*)root,NCZ_V2_GROUP,&jnczgroup))) goto done;
-
-    /* Look for _nczarr_attr*/
-    if((stat = getnczarrkey((NC_OBJ*)root,NCZ_V2_ATTR,&jnczattr))) goto done;
-
-    if(jsuper != NULL) {
-	if(jsuper->sort != NCJ_DICT) {stat = NC_ENCZARR; goto done;}
-	if((stat = dictgetalt(jsuper,"nczarr_version","version",&jtmp))<0) {stat = NC_EINVAL; goto done;}
-	nczarr_version = nulldup(NCJstring(jtmp));
-    }
-
-    if(jzgroup != NULL) {
-        if(jzgroup->sort != NCJ_DICT) {stat = NC_ENCZARR; goto done;}
-        /* In any case, extract the zarr format */
-        if((stat = NCJdictget(jzgroup,"zarr_format",&jtmp))<0) {stat = NC_EINVAL; goto done;}
-	if(zarr_format == NULL)
-	    zarr_format = nulldup(NCJstring(jtmp));
-	else if(strcmp(zarr_format,NCJstring(jtmp))!=0)
-	    {stat = NC_ENCZARR; goto done;}
-    }
-
-    if(nczarrvp) {*nczarrvp = nczarr_version; nczarr_version = NULL;}
-    if(zarrfp) {*zarrfp = zarr_format; zarr_format = NULL;}
-done:
-    nullfree(key);
-    nullfree(zarr_format);
-    nullfree(nczarr_version);
-    return ZUNTRACE(THROW(stat));
-}
 
 /**************************************************/
 /* Utilities */

@@ -27,8 +27,8 @@ noinst_PROGRAMS =
 noinst_PROGRAMS += ncpluginpath
 ncpluginpath_SOURCES = ncpluginpath.c
 
-check_PROGRAMS += tst_nclist test_ncuri test_pathcvt
-TESTS += tst_nclist test_ncuri run_pathcvt.sh
+check_PROGRAMS += tst_nclist test_ncuri test_pathcvt test_dauth tst_udf_infermodel
+TESTS += tst_nclist test_ncuri run_pathcvt.sh test_dauth tst_udf_infermodel
 
 # Performance tests
 if BUILD_BENCHMARKS
@@ -48,8 +48,10 @@ endif # USE_HDF5
 
 if USE_HDF5
 if NETCDF_ENABLE_NCZARR_FILTERS
+if NETCDF_BUILD_UTILITIES
 check_PROGRAMS += tst_pluginpaths
 TESTS += run_pluginpaths.sh run_dfaltpluginpath.sh
+endif
 endif
 endif
 
@@ -73,7 +75,7 @@ EXTRA_DIST += ref_get.txt ref_set.txt
 EXTRA_DIST += ref_xget.txt ref_xset.txt
 EXTRA_DIST += ref_provparse.txt 
 EXTRA_DIST += reclaim_tests.baseline
-CLEANFILES = reclaim_tests*.txt reclaim_tests.nc reclaim_tests.dmp tmp_*.txt
+CLEANFILES = reclaim_tests*.txt reclaim_tests.nc reclaim_tests.dmp tmp_*.txt tst_udf_infermodel.udf
 
 # Remove directories
 clean-local:
