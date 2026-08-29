@@ -10,9 +10,8 @@
 
 #include <nc_tests.h>
 #include "err_macros.h"
-#include <unistd.h>
+#include "nc_perf_compat.h"
 #include <time.h>
-#include <sys/time.h> /* Extra high precision time info. */
 
 #define MAX_LEN 30
 #define TMP_FILE_NAME "tst_files2_tmp.out"
@@ -35,6 +34,14 @@ int nc4_timeval_subtract(struct timeval *result, struct timeval *x,
 int
 get_mem_used1(int *mem_used)
 {
+#ifdef _WIN32
+   /* No ps(1) that understands -o here: the ps a Windows shell environment
+      provides rejects the option, leaves the redirect file empty, and the
+      sscanf below then leaves *mem_used holding whatever was on the stack.
+      The reading is printed and never asserted on, so report "unknown". */
+   *mem_used = -1;
+   return NC_NOERR;
+#else
    char cmd[NC_MAX_NAME + 1];
    char blob[MAX_LEN + 1] = "";
    FILE *fp;
@@ -46,11 +53,13 @@ get_mem_used1(int *mem_used)
 
    /* Read the results and delete temp file. */
    if (!(fp = NCfopen(TMP_FILE_NAME, "r"))) ERR;
+   *mem_used = -1;
    fread(blob, MAX_LEN, 1, fp);
    sscanf(blob, "%d", mem_used);
    fclose(fp);
    unlink(TMP_FILE_NAME);
    return NC_NOERR;
+#endif
 }
 
 void
@@ -72,18 +81,33 @@ get_mem_used2(int *mem_used)
       fscanf(pf, "%u %u %u %u %u %u", &size, &resident, &share,
 	     &text, &lib, &data);
       *mem_used = data;
+      fclose(pf);
    }
    else
+   {
+      /* No /proc: any platform but Linux, which now includes Windows, where
+	 this file compiles for the first time.  fclose(NULL) is undefined
+	 behaviour and crashes with the Microsoft runtime; the caller only
+	 compares two readings, so a constant -1 reports "unknown" and the
+	 delta stays zero. */
       *mem_used = -1;
-   fclose(pf);
+   }
 }
 
 void
 get_mem_used3(int *mem_used)
 {
+#ifdef HAVE_SBRK
    void *vp;
    vp = sbrk(0);
    *mem_used = ((char *)vp - (char *)last_sbrk)/1024;
+#else
+   /* sbrk(2) has no Windows equivalent, and it is deprecated everywhere else:
+      a modern malloc satisfies most requests from mmap, so the break has not
+      tracked heap use for a long time. The reading is printed and not
+      asserted on, so report "unknown" rather than refusing to build. */
+   *mem_used = -1;
+#endif
 }
 
 /* Create a sample file, with num_vars 3D or 4D variables, with dim
@@ -175,7 +199,9 @@ main(int argc, char **argv)
 {
 
    printf("\n*** Testing netcdf-4 file functions, some more.\n");
+#ifdef HAVE_SBRK
    last_sbrk = sbrk(0);
+#endif
    printf("*** testing lots of open files...\n");
    {
 #define NUM_TRIES 6
