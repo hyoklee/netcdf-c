@@ -101,7 +101,12 @@ endif()
 if(MSVC)
   set(ISMSVC yes)
 endif()
-if(osname MATCHES "MINGW.*" OR osname MATCHES "MSYS.*")
+# `uname -s` reports MINGW64_NT-* / MSYS_NT-* whenever cmake is started from a
+# Git-Bash or MSYS2 shell, which says nothing about the compiler in use. An MSVC
+# build launched from Git Bash therefore set ISMINGW (and CMake's own MINGW), and
+# everything gated on "not MinGW" silently vanished -- the ncdump unicode tests
+# among them. Trust the toolchain, not the shell that started it.
+if(NOT MSVC AND (osname MATCHES "MINGW.*" OR osname MATCHES "MSYS.*"))
   set(ISMINGW yes)
   set(MINGW yes)
 endif()
@@ -136,8 +141,14 @@ endif()
 include(GNUInstallDirs)
 
 if(MSVC)
-  set(GLOBAL PROPERTY USE_FOLDERS ON)
-  target_compile_options(netcdf PRIVATE "/utf-8")
+  set_property(GLOBAL PROPERTY USE_FOLDERS ON)
+  # UTF-8 source and execution character sets for the whole tree, not just the
+  # library: nc_test/tst_utf8_validate.c and several ncdump references carry
+  # UTF-8 literals that MSVC would otherwise read in the ANSI code page. The
+  # previous form named the `netcdf` target, which liblib/ does not create until
+  # much later in this file, and set a variable called GLOBAL rather than the
+  # USE_FOLDERS property.
+  add_compile_options("/utf-8")
 endif()
 
 # auto-configure style checks, other CMake modules.
@@ -406,7 +417,9 @@ option(NETCDF_GENERATE_NCGEN "Automatically regenerate ncgen C files if required
 include(CMakeDependentOption)
 
 # Option to use MMAP
-cmake_dependent_option(NETCDF_ENABLE_MMAP "Use MMAP." ON "NOT WIN32" OFF)
+# libsrc/mmapio.c now builds on Windows too: libsrc/ncwinmmap.h supplies the
+# mmap()/munmap() slice it uses, over CreateFileMapping/MapViewOfFile.
+option(NETCDF_ENABLE_MMAP "Use MMAP." ON)
 
 # Option to use examples.
 option(NETCDF_ENABLE_EXAMPLES "Build Examples" ON)
@@ -1372,8 +1385,10 @@ if(NETCDF_ENABLE_ATEXIT_FINALIZE AND NOT HAVE_ATEXIT)
 endif()
 endif()
 
-# Check to see if MAP_ANONYMOUS is defined.
-if(NETCDF_ENABLE_MMAP)
+# Check to see if MAP_ANONYMOUS is defined. Windows has neither <sys/mman.h> nor
+# mmap(); libsrc/ncwinmmap.h provides both for the one file that needs them, so
+# the probe is not the question to ask there.
+if(NETCDF_ENABLE_MMAP AND NOT WIN32)
   CHECK_C_SOURCE_COMPILES("
   #include <sys/mman.h>
   int main() {int x = MAP_ANONYMOUS;}" HAVE_MAPANON)
@@ -1408,6 +1423,13 @@ if(MSVC)
   endif()
   set(WINVERMAJOR ${WVM} CACHE STRING "" FORCE)
   set(WINVERBUILD ${WVB} CACHE STRING "" FORCE)
+
+  # Every netCDF-C executable takes UTF-8 for its command line and its file
+  # names. /MANIFESTINPUT is merged into the manifest the linker already
+  # embeds, so this needs no per-target wiring and no mt.exe step.
+  set(NC_UTF8_MANIFEST "${CMAKE_CURRENT_SOURCE_DIR}/cmake/netcdf_utf8.manifest")
+  set(CMAKE_EXE_LINKER_FLAGS
+      "${CMAKE_EXE_LINKER_FLAGS} /MANIFEST:EMBED /MANIFESTINPUT:${NC_UTF8_MANIFEST}")
 endif()
 
 #####
