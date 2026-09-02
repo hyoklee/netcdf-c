@@ -7,7 +7,7 @@ if test "x$srcdir" = x ; then srcdir=`pwd`; fi
 
 #CMD="valgrind --leak-check=full"
 
-if test "x$FP_MSVC" = x && test "x$FP_ISMINGW" = x ; then
+if test "x$FP_ISMSVC" = x && test "x$FP_ISMINGW" = x ; then
 FEATURE_PLUGIN_SEARCH_PATH=`echon "${FEATURE_PLUGIN_SEARCH_PATH}" | tr ':' ';'`
 fi
 
