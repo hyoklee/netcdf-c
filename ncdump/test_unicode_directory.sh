@@ -26,17 +26,27 @@ ls -ld "${UNISTRING}"
 
 # Do test for netcdf-3 and (optionally) netcdf-4
 
-echo "*** Generating netcdf-3 binary file ${UNISTRING}/tst_utf.nc..."
-${NCGEN} -b -o "${UNISTRING}/tst_utf.nc" "${srcdir}/ref_tst_utf8.cdl"; ERR
-echo "*** Accessing binary file ${UNISTRING}/tst_utf.nc..."
-${NCDUMP} -h "${UNISTRING}/tst_utf.nc"; ERR
+# Every path below is written "./${UNISTRING}/..." rather than
+# "${UNISTRING}/...". Both name the same file, but only the first survives
+# Git-Bash. MSYS translates POSIX paths in the argv of a native (non-MSYS)
+# program, and given a relative path whose first component is not ASCII it
+# mistakes the remainder for an absolute path and expands it against the
+# MSYS root, so ncgen is handed
+#   <CJK>C:/Users/runner/micromamba/envs/CI/Library/tst_utf.nc
+# and nc_create() rightly rejects it. A leading "./" makes the argument
+# unambiguously relative and MSYS leaves it alone. See Unidata/netcdf-c
+# issue for the full probe.
+echo "*** Generating netcdf-3 binary file ./${UNISTRING}/tst_utf.nc..."
+${NCGEN} -b -o "./${UNISTRING}/tst_utf.nc" "${srcdir}/ref_tst_utf8.cdl"; ERR
+echo "*** Accessing binary file ./${UNISTRING}/tst_utf.nc..."
+${NCDUMP} -h "./${UNISTRING}/tst_utf.nc"; ERR
 
 if test "x$FEATURE_HDF5" = xyes ; then
-echo "*** Generating netcdf-4 binary file ${UNISTRING}/tst_utf.nc..."
-rm -f "${UNISTRING}/tst_utf.nc"
-${NCGEN} -4 -b -o "${UNISTRING}/tst_utf.nc" "${srcdir}/ref_tst_utf8.cdl"; ERR
-echo "*** Accessing binary file ${UNISTRING}/tst_utf.nc..."
-${NCDUMP} -h "${UNISTRING}/tst_utf.nc"; ERR
+echo "*** Generating netcdf-4 binary file ./${UNISTRING}/tst_utf.nc..."
+rm -f "./${UNISTRING}/tst_utf.nc"
+${NCGEN} -4 -b -o "./${UNISTRING}/tst_utf.nc" "${srcdir}/ref_tst_utf8.cdl"; ERR
+echo "*** Accessing binary file ./${UNISTRING}/tst_utf.nc..."
+${NCDUMP} -h "./${UNISTRING}/tst_utf.nc"; ERR
 fi
 
 echo "Test Passed. Cleaning up."
